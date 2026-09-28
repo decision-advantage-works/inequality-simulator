@@ -22,16 +22,16 @@ def run_server():
     # 2. Initialize RAG Engine
     init_gemini()
     
-    print("\nBackend API will be available at: http://localhost:5000/api")
-    print("Frontend will be available at: http://localhost:5000")
+    print("\nBackend API will be available at: http://localhost:5001/api")
+    print("Frontend will be available at: http://localhost:5001")
     print("\nPress Ctrl+C to stop the server")
     
-    app.run(debug=True, use_reloader=False, host='0.0.0.0', port=5000)
+    app.run(debug=True, use_reloader=False, host='0.0.0.0', port=5001)
 
 def open_browser():
     """Open browser after a short delay"""
     time.sleep(2)
-    webbrowser.open('http://localhost:5000')
+    webbrowser.open('http://localhost:5001')
 
 if __name__ == "__main__":
     # Start browser opening in a separate thread

@@ -17,11 +17,11 @@ class InequalitySimulator {
             this.apiBase = '/api';
         } else if (isLocalhost) {
             // Local development
-            this.apiBase = 'http://localhost:5000/api';
+            this.apiBase = 'http://localhost:5001/api';
         } else {
             // Local network access (e.g. mobile testing)
             const apiProtocol = protocol === 'https:' ? 'https:' : 'http:';
-            this.apiBase = `${apiProtocol}//192.168.50.4:5000/api`;
+            this.apiBase = `${apiProtocol}//192.168.50.4:5001/api`;
         }
 
         this.testBackendConnection();
@@ -36,17 +36,9 @@ class InequalitySimulator {
         this.previousClassCounts = null; // Store previous class distribution for flow calculation
     this.currentView = 'population';
     this.youIndex = null; // which agent index represents "you"
-    this.selectedCharacterIdx = null;
-    this._charPickerResolver = null;
-    this._sceneReadyPromise = null;
-    this._resolveSceneReady = null;
     const urlParams = new URLSearchParams(window.location.search);
     this.youSeed = urlParams.get('seed') || localStorage.getItem('sim_you_seed') || (Math.random().toString(36).slice(2));
     localStorage.setItem('sim_you_seed', this.youSeed);
-
-    // 3D SceneManager — created lazily the first time person view is opened
-    this.sceneManager     = null;
-    this.sceneCameraMode  = 'third';  // 'third' | 'first'
 
         this.initializeCharts();
         this.updateStatus();
@@ -65,231 +57,18 @@ class InequalitySimulator {
             viewSelect.addEventListener('change', (e) => {
                 this.setView(e.target.value);
             });
-            // Default to person view on load
-            viewSelect.value = 'person';
-            this.setView('person');
         }
-
-        this._updateCameraModeLabel();
 
     }
 
     /**
      * setView(view)
-     * Toggle between 'person' (3D scene) and 'population' (charts).
-     * On the first switch to person view the SceneManager is created
-     * and GLB assets are loaded from /assets/.
+     * Toggle between available views (e.g. 'population' charts).
      */
     setView(view) {
         this.currentView = view;
-        const personView    = document.getElementById('person-view');
         const chartCarousel = document.getElementById('chart-carousel');
-
-        if (view === 'person') {
-            if (chartCarousel) chartCarousel.style.display = 'none';
-            if (personView)    personView.style.display    = 'block';
-
-            // Initialise Three.js scene the very first time
-            if (!this.sceneManager) this._initScene();
-
-            // If a model is already running, push data to scene immediately
-            if (this.isInitialized) this.updatePersonView();
-
-        } else {
-            if (personView)    personView.style.display    = 'none';
-            if (chartCarousel) chartCarousel.style.display = 'block';
-        }
-    }
-
-    /**
-     * _initScene()
-     * Creates the SceneManager, initialises the Three.js renderer on the
-     * #scene canvas, and begins loading the four Mixamo GLB files.
-     * Called once, lazily, on the first switch to person view.
-     */
-    _initScene() {
-        const canvas = document.getElementById('scene');
-        if (!canvas || typeof SceneManager === 'undefined') {
-            console.warn('[app.js] SceneManager or #scene canvas not found.');
-            return;
-        }
-
-        this._sceneReadyPromise = new Promise((resolve) => {
-            this._resolveSceneReady = resolve;
-        });
-
-        this.sceneManager = new SceneManager(canvas);
-        this.sceneManager.init();
-
-        // One frame after init, force the renderer to match the actual canvas
-        // dimensions — guards against the edge case where the browser hadn't
-        // finished painting when init() read clientWidth/clientHeight.
-        requestAnimationFrame(() => {
-            if (this.sceneManager) this.sceneManager._onResize();
-        });
-
-        this.sceneManager.loadCharacter(() => {
-            // All GLBs ready — populate the character picker first so the grid
-            // is fully built before the spinner disappears (prevents a blank-
-            // picker flash). Then fade out the loading spinner.
-            this._showCharPicker();
-            const loadingEl = document.getElementById('scene-loading');
-            if (loadingEl) {
-                gsap.to(loadingEl, {
-                    opacity: 0, duration: 0.4,
-                    onComplete: () => {
-                        loadingEl.style.display = 'none';
-                    }
-                });
-            }
-            this._resolveSceneReady?.();
-            this._resolveSceneReady = null;
-            console.log('[app.js] Scene ready.');
-            if (this.isInitialized) this.updatePersonView();
-        });
-    }
-
-    /**
-     * awaitSceneReady()
-     * Ensures the 3D scene and character assets are fully loaded.
-     *
-     * @returns {Promise<void>}
-     */
-    async awaitSceneReady() {
-        if (!this.sceneManager) {
-            this._initScene();
-        }
-
-        if (this.sceneManager?.isLoaded) {
-            return;
-        }
-
-        if (this._sceneReadyPromise) {
-            await this._sceneReadyPromise;
-        }
-    }
-
-    /**
-     * _showCharPicker()
-     * Populates and fades in the character selection overlay.
-     * If there is only one character the picker is skipped automatically.
-     */
-    _showCharPicker(options = {}) {
-        // If only one character is loaded, skip the picker
-        if (!this.sceneManager || this.sceneManager.characterPool.length <= 1) {
-            // Still apply index 0 so mixer is bound correctly
-            this.selectedCharacterIdx = 0;
-            this.sceneManager && this.sceneManager.setPlayerCharacter(0);
-            return;
-        }
-
-        const picker = document.getElementById('char-picker');
-        if (!picker) return;
-        const { title, subtitle } = options;
-
-        const titleEl = picker.querySelector('#char-picker-title');
-        const subEl = picker.querySelector('#char-picker-sub');
-        if (titleEl && title) titleEl.textContent = title;
-        if (subEl && subtitle) subEl.textContent = subtitle;
-
-        // Build one card per character dynamically from CHAR_META
-        const grid = picker.querySelector('#char-picker-grid');
-        grid.innerHTML = '';
-        const pool = typeof CHAR_META !== 'undefined' ? CHAR_META : [];
-        const count = this.sceneManager.characterPool.length;
-        for (let i = 0; i < count; i++) {
-            const meta = pool[i] || { name: `Character ${i + 1}`, emoji: '🧑' };
-            const card = document.createElement('button');
-            card.className = 'char-card';
-            const portraitSrc = this.sceneManager.getCharacterPortraitDataUrl?.(i, 160);
-            card.innerHTML = `${portraitSrc
-                ? `<img class="char-portrait" src="${portraitSrc}" alt="${meta.name}" />`
-                : `<span class="char-name">${meta.emoji}</span>`}
-                              <span class="char-name">${meta.name}</span>`;
-            card.addEventListener('click', () => this.selectCharacter(i));
-            grid.appendChild(card);
-        }
-
-        picker.style.display = 'flex';
-        gsap.fromTo(picker, { opacity: 0 }, { opacity: 1, duration: 0.4 });
-    }
-
-    /**
-     * selectCharacter(idx)
-     * Called when a card in the character picker is clicked.
-     */
-    selectCharacter(idx) {
-        this.selectedCharacterIdx = idx;
-        if (this.sceneManager) this.sceneManager.setPlayerCharacter(idx);
-
-        const picker = document.getElementById('char-picker');
-        if (picker) {
-            gsap.to(picker, {
-                opacity: 0, duration: 0.3,
-                onComplete: () => {
-                    picker.style.display = 'none';
-                    const resolver = this._charPickerResolver;
-                    this._charPickerResolver = null;
-                    resolver?.(idx);
-                }
-            });
-        } else {
-            const resolver = this._charPickerResolver;
-            this._charPickerResolver = null;
-            resolver?.(idx);
-        }
-    }
-
-    /**
-     * promptCharacterSelection()
-     * Shows the picker as part of initialization and resolves with the chosen index.
-     *
-     * @returns {Promise<number>}
-     */
-    promptCharacterSelection() {
-        if (!this.sceneManager || !this.sceneManager.isLoaded) {
-            return Promise.resolve(this.selectedCharacterIdx ?? 0);
-        }
-
-        return new Promise((resolve) => {
-            this._charPickerResolver = resolve;
-            this._showCharPicker({
-                title: 'Choose your character',
-                subtitle: 'Pick who you want to follow before initializing the simulator',
-            });
-        });
-    }
-
-    /**
-     * toggleCameraMode()
-     * Called by the camera toggle button in landing.html.
-     * Flips between third-person (behind character) and first-person
-     * (eye level, crowd visible).
-     */
-    toggleCameraMode() {
-        this.sceneCameraMode = (this.sceneCameraMode === 'third') ? 'first' : 'third';
-        if (this.sceneManager) {
-            this.sceneManager.setCameraMode(this.sceneCameraMode);
-        }
-        // Shrink wealth display slightly in first-person mode
-        const overlay = document.getElementById('scene-overlay');
-        if (overlay) {
-            overlay.classList.toggle('fp-hud', this.sceneCameraMode === 'first');
-        }
-        this._updateCameraModeLabel();
-    }
-
-    /**
-     * _updateCameraModeLabel()
-     * Reflects the currently active camera mode in the bottom-right button.
-     */
-    _updateCameraModeLabel() {
-        const label = document.getElementById('cam-mode-label');
-        if (label) {
-            label.innerHTML = this.sceneCameraMode === 'third'
-                ? '&#128694; Third Person'
-                : '&#128065; First Person';
-        }
+        if (chartCarousel) chartCarousel.style.display = 'block';
     }
     
     async testBackendConnection() {
@@ -337,9 +116,7 @@ class InequalitySimulator {
             clearInterval(this.continuousRunInterval);
             this.continuousRunInterval = null;
             this.updateButtonStates();
-            // Clear any in-flight money particles so they don't keep
-            // animating after the simulation has stopped.
-            if (this.sceneManager) this.sceneManager.clearParticles();
+
         }
     }
     
@@ -1271,154 +1048,16 @@ class InequalitySimulator {
         if (!this.isInitialized) return;
 
         try {
-            // Stat cards always update regardless of which view is active
-            const tasks = [this._updateStatCards()];
-
-            if (this.currentView === 'person') {
-                tasks.push(this.updatePersonView());
-            } else {
-                tasks.push(
-                    this.updateWealthChart(),
-                    this.updateMobilityChart(),
-                    this.updateGiniChart(incremental),
-                    this.updateTotalWealthChart(incremental),
-                );
-            }
+            const tasks = [
+                this._updateStatCards(),
+                this.updateWealthChart(),
+                this.updateMobilityChart(),
+                this.updateGiniChart(incremental),
+                this.updateTotalWealthChart(incremental),
+            ];
 
             await Promise.all(tasks);
         } catch (_) { /* individual methods handle their own errors */ }
-    }
-
-    /**
-     * updatePersonView()
-     * ------------------------------------------------------------------
-     * Called every simulation step when the person view is active.
-     *
-     * Fetches wealth + mobility data, finds "you" in the population,
-     * then:
-     *   1. Updates the HUD overlays (#you-bracket-badge, etc.)
-     *   2. Drives the 3D character via sceneManager.update()
-     */
-    async updatePersonView() {
-        try {
-            const status = await this.apiCall('/status');
-            if (!status.initialized) return;
-
-            // Fetch both endpoints in parallel for speed
-            const [wealthData, mobData, exchangeData] = await Promise.all([
-                this.apiCall('/data/wealth-distribution'),
-                this.apiCall('/data/mobility'),
-                this.apiCall('/data/exchanges').catch(() => ({ edges: [] })),
-            ]);
-
-            // ── Flatten agent arrays ──────────────────────────────
-            let wealths  = [];  // number[]  — one entry per agent
-            let brackets = [];  // string[]  — 'Lower' | 'Middle' | 'Upper'
-
-            const isComparison = !wealthData.current;
-
-            if (!isComparison && Array.isArray(wealthData.current)) {
-                wealths  = wealthData.current;
-                const mobArr = Array.isArray(mobData)
-                    ? mobData
-                    : (Array.isArray(mobData?.current) ? mobData.current : []);
-                brackets = mobArr.map(a => a.bracket || 'Middle');
-                // Pad if lengths differ
-                while (brackets.length < wealths.length) brackets.push('Middle');
-
-            } else if (isComparison) {
-                const order = ['econophysics', 'fascism', 'communism', 'capitalism'];
-                order.forEach(policy => {
-                    (wealthData[policy] || []).forEach(v  => wealths.push(v));
-                    (mobData[policy]    || []).forEach(a  => brackets.push(a.bracket || 'Middle'));
-                });
-            }
-
-            if (!wealths.length) return;
-
-            // ── Pick "you" index (stable across steps) ────────────
-            if (this.youIndex == null || this.youIndex >= wealths.length) {
-                this.youIndex = Math.floor(Math.random() * wealths.length);
-            }
-
-            const youWealth  = wealths[this.youIndex];
-            const youBracket = brackets[this.youIndex] || 'Middle';
-
-            // ── Percentile: what % of agents earn less than you ───
-            const below      = wealths.filter(w => w < youWealth).length;
-            const percentile = Math.round((below / wealths.length) * 100);
-            const pctLabel   = percentile >= 50
-                ? `Top ${100 - percentile}%`
-                : `Bottom ${percentile + 1}%`;
-
-            // ── Update HUD overlays ───────────────────────────────
-            const fmt = (n) => {
-                if (typeof n !== 'number' || !isFinite(n)) return '—';
-                if (Math.abs(n) >= 1e9) return `$ ${(n/1e9).toFixed(1)} B`;
-                if (Math.abs(n) >= 1e6) return `$ ${(n/1e6).toFixed(1)} M`;
-                if (Math.abs(n) >= 1e3) return `$ ${(n/1e3).toFixed(1)} K`;
-                return `$ ${n.toFixed(0)}`;
-            };
-
-            const badgeEl  = document.getElementById('you-bracket-badge');
-            const wealthEl = document.getElementById('you-wealth-display');
-            const pctEl    = document.getElementById('you-percentile');
-
-            if (badgeEl) {
-                badgeEl.textContent = youBracket;
-                // Replace any existing bracket class with the current one
-                badgeEl.classList.remove('Lower', 'Middle', 'Upper');
-                badgeEl.classList.add(youBracket);
-            }
-
-            // Animate wealth counter with GSAP instead of a hard set
-            if (wealthEl) {
-                const from = parseFloat(wealthEl.dataset.raw || '0');
-                const obj  = { val: from };
-                gsap.to(obj, {
-                    val: youWealth, duration: 0.6, ease: 'power1.out',
-                    onUpdate: () => { wealthEl.textContent = fmt(obj.val); }
-                });
-                wealthEl.dataset.raw = youWealth;
-            }
-            if (pctEl) pctEl.textContent = pctLabel;
-
-            // ── Drive 3D character ────────────────────────────────
-            if (this.sceneManager && this.sceneManager.isLoaded) {
-                // Pass up to 99 crowd brackets (exclude "you")
-                const crowdAgentIndices = wealths
-                    .map((_, i) => i)
-                    .filter((i) => i !== this.youIndex)
-                    .slice(0, 99);
-
-                const crowdBrackets = crowdAgentIndices.map(i => brackets[i] || 'Middle');
-
-                // Per-crowd member wealth and percentile label for overlay labels
-                const crowdWealth = crowdAgentIndices.map(i => wealths[i] ?? 0);
-                const crowdPctLabel = crowdAgentIndices.map(i => {
-                    const w = wealths[i] ?? 0;
-                    const below = wealths.filter(x => x < w).length;
-                    const p = Math.round((below / wealths.length) * 100);
-                    return p >= 50 ? `Top ${100 - p}%` : `Bottom ${p + 1}%`;
-                });
-
-                this.sceneManager.update({
-                    bracket:           youBracket,
-                    wealth:            youWealth,
-                    percentile,
-                    youPctLabel:       pctLabel,
-                    crowdBrackets,
-                    crowdAgentIndices,
-                    crowdWealth,
-                    crowdPctLabel,
-                    exchanges:         exchangeData?.edges ?? [],
-                    youAgentIdx:       this.youIndex,
-                });
-            }
-
-        } catch (e) {
-            console.warn('[updatePersonView] failed:', e);
-        }
     }
 }
 

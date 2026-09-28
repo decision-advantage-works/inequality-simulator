@@ -267,25 +267,35 @@ def get_total_wealth_data():
 
 @app.route('/api/data/exchanges', methods=['GET'])
 def get_exchanges():
+    """Return payer→receiver positional-index pairs from the most recent step.
+
+    Each entry in 'edges' is [from_idx, to_idx, amt] where the indices
+    correspond to the ordering of agents in /api/data/mobility and
+    /api/data/wealth-distribution.
+    """
     global current_model
     if current_model is None: return jsonify({'error': 'Model not initialized'}), 400
     with model_lock:
-        edges = []
         if current_model.policy == "comparison":
-            for sub_model in current_model.comparison_models.values():
-                for agent in sub_model.agents:
-                    uids = getattr(agent, 'last_paid_uids', [])
-                    amounts = getattr(agent, 'last_paid_amounts', [])
-                    for k, paid_uid in enumerate(uids):
-                        amt = amounts[k] if k < len(amounts) else 0
-                        edges.append([agent.unique_id, paid_uid, amt])
-        else:
-            for agent in current_model.agents:
-                uids = getattr(agent, 'last_paid_uids', [])
-                amounts = getattr(agent, 'last_paid_amounts', [])
-                for k, paid_uid in enumerate(uids):
+            return json_response({'edges': []})
+
+        agent_list = list(current_model.agents)
+        if not agent_list:
+            return json_response({'edges': []})
+
+        # Build uid → positional-index map (same order as /data/mobility)
+        uid_to_idx = {a.unique_id: i for i, a in enumerate(agent_list)}
+
+        edges = []
+        for i, agent in enumerate(agent_list):
+            uids = getattr(agent, 'last_paid_uids', [])
+            amounts = getattr(agent, 'last_paid_amounts', [])
+            for k, uid in enumerate(uids):
+                j = uid_to_idx.get(uid, -1)
+                if j != -1 and j != i:
                     amt = amounts[k] if k < len(amounts) else 0
-                    edges.append([agent.unique_id, paid_uid, amt])
+                    edges.append([i, j, amt])
+
         return json_response({'edges': edges})
 
 @app.route('/api/status', methods=['GET'])
@@ -293,7 +303,13 @@ def get_status():
     global current_model
     if current_model is None: return jsonify({'initialized': False})
     with model_lock:
-        return json_response({'initialized': True, 'policy': current_model.policy})
+        return json_response({
+            'initialized': True,
+            'policy': current_model.policy,
+            'population': current_model.population,
+            'step_count': getattr(current_model, 'comparison_step_count', 0)
+                          if current_model.policy == 'comparison' else 0
+        })
 
 @app.route('/api/reset_code', methods=['POST'])
 def reset_code():
@@ -531,6 +547,18 @@ def chat_endpoint():
             if valid:
                 status_log.append("Phase 2: Success! Code verified.")
                 json_data['status_message'] = f"✅ Success! (Attempt {attempt+1})\n" + "\n".join(status_log)
+
+                # Build a step_code wrapper so the frontend can auto-wire
+                # the custom policy without needing Blockly.
+                # Extract the class name from the generated code.
+                class_match = re.search(r'class\s+(\w+)', json_data.get('python_code', ''))
+                if class_match:
+                    class_name = class_match.group(1)
+                    json_data['step_code'] = (
+                        f"def step(self):\n"
+                        f"    {class_name}().execute(self, self.model)\n"
+                    )
+
                 final_response = json_data
                 break
             else:
@@ -550,4 +578,4 @@ def chat_endpoint():
 if __name__ == "__main__":
     setup_simulation()
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, host='0.0.0.0', port=port)
+    app.run(debug=False, host='0.0.0.0', port=5001)

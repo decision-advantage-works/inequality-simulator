@@ -3,1208 +3,490 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inequality Simulator</title>
-
-    <!--
-      THREE.JS  (r151 — last version that ships examples as plain scripts,
-                 no ES-module build step required)
-      We load three files:
-        1. three.min.js      — the core library, puts THREE on window
-        2. GLTFLoader.js     — parses .glb / .gltf files
-        3. SkeletonUtils.js  — proper deep-clone of skinned meshes (needed for crowd)
-    -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/utils/SkeletonUtils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <title>SOCIAL CAPITAL</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #1a1a1a;
-            overflow-x: hidden;
-            color: #e0e0e0;
-        }
-        
-        /* Sidebar Styles */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 320px;
-            height: 100vh;
-            background-color: #2c3e50;
-            color: white;
-            transform: translateX(0);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-            overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar.hidden {
-            transform: translateX(-100%);
-        }
-        
-        .sidebar-header {
-            padding: 20px;
-            background-color: #34495e;
-            border-bottom: 1px solid #4a5f7a;
-        }
-        
-        .sidebar-header h1 {
-            margin: 0 0 10px 0;
-            font-size: 24px;
-            color: #ecf0f1;
-        }
-        
-        .sidebar-header p {
-            margin: 0;
-            font-size: 14px;
-            color: #bdc3c7;
-            line-height: 1.4;
-        }
-        
-        .sidebar-content {
-            padding: 20px;
-        }
-        
-        .status-section {
-            background-color: #34495e;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-        }
-        
-        .status-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #ecf0f1;
-            font-size: 16px;
-        }
-        
-        .status-item {
-            margin: 8px 0;
-            font-size: 14px;
-            color: #bdc3c7;
-        }
-        
-        .status-value {
-            color: #3498db;
-            font-weight: 500;
-        }
-        
-        .controls-section {
-            margin-bottom: 25px;
-        }
-        
-        .section-title {
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #ecf0f1;
-            font-size: 16px;
-            border-bottom: 1px solid #4a5f7a;
-            padding-bottom: 8px;
-        }
-        
-        .control-group {
-            margin-bottom: 15px;
-        }
-        
-        .control-group label {
-            display: block;
-            font-weight: 500;
-            color: #ecf0f1;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-        
-        .control-group select,
-        .control-group input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #4a5f7a;
-            border-radius: 4px;
-            font-size: 14px;
-            background-color: #34495e;
-            color: #ecf0f1;
-            box-sizing: border-box;
-        }
-        
-        .control-group select:focus,
-        .control-group input:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-        }
-        
-        .buttons-section button {
-            width: 100%;
-            padding: 10px 15px;
-            margin-bottom: 8px;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            color: white;
-        }
-        
-        .buttons-section button:disabled {
-            background-color: #7f8c8d;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        
-        .btn-primary {
-            background-color: #2196f3;
-        }
-        
-        .btn-primary:hover:not(:disabled) {
-            background-color: #1976d2;
-        }
-        
-        .btn-success {
-            background-color: #4caf50;
-        }
-        
-        .btn-success:hover:not(:disabled) {
-            background-color: #388e3c;
-        }
-        
-        .btn-warning {
-            background-color: #ff9800;
-        }
-        
-        .btn-warning:hover:not(:disabled) {
-            background-color: #f57c00;
-        }
-        
-        .btn-danger {
-            background-color: #f44336;
-        }
-        
-        .btn-danger:hover:not(:disabled) {
-            background-color: #d32f2f;
-        }
-        
-        .running-continuous {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { background-color: #27ae60; }
-            50% { background-color: #2ecc71; }
-            100% { background-color: #27ae60; }
-        }
-        
-        /* Toggle Button */
-        .sidebar-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1001;
-            background-color: #2c3e50;
-            color: white;
-            border: none;
-            padding: 12px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar-toggle:hover {
-            background-color: #34495e;
-        }
-        
-        .sidebar-toggle.sidebar-visible {
-            left: 340px;
-        }
-        
-        /* Main Content */
-        .main-content {
-            margin-left: 320px;
-            padding: 20px;
-            transition: margin-left 0.3s ease;
-            min-height: 100vh;
-            background-color: #1a1a1a;
-        }
-        
-        .main-content.sidebar-hidden {
-            margin-left: 0;
-        }
-
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-            vertical-align: middle;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #4a5f7a;
-            transition: .4s;
-            border-radius: 24px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: #3498db;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        .error {
-            background-color: #d32f2f;
-            color: white;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 10px 0;
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1002;
-            max-width: 300px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            border: 1px solid #f44336;
-        }
-        
-        /* Info Button Styles */
-        .info-button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-left: 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-            vertical-align: middle;
-        }
-        
-        .info-button:hover {
-            background-color: #2980b9;
-            transform: scale(1.1);
-        }
-        
-        .chart-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-        }
-        /* Add a light-weight metrics line shown above charts (used for Mobility) */
-        .chart-metrics {
-            text-align: center;
-            color: #bdc3c7;
-            font-size: 14px;
-            margin: -6px 0 8px 0; /* tuck closer to header */
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.7);
-        }
-        
-        .modal-content {
-            background-color: #2d2d2d;
-            margin: 10% auto;
-            padding: 25px;
-            border: 1px solid #404040;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 600px;
-            color: #e0e0e0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #404040;
-            padding-bottom: 15px;
-        }
-        
-        .modal-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #3498db;
-            margin: 0;
-        }
-        
-        .close-button {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: #bdc3c7;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            transition: all 0.3s;
-        }
-        
-        .close-button:hover {
-            background-color: #404040;
-            color: #e0e0e0;
-        }
-        
-        .modal-body {
-            line-height: 1.6;
-            font-size: 14px;
-        }
-        
-        .modal-body p {
-            margin-bottom: 15px;
-        }
-        
-        .modal-body strong {
-            color: #3498db;
-        }
-
-        .modal-footer {
-            padding-top: 15px;
-            border-top: 1px solid #404040;
-            margin-top: 20px;
-            text-align: right;
-        }
-
-        .modal-footer button {
-            margin-left: 10px;
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 280px;
-            }
-            
-            .main-content {
-                margin-left: 280px;
-            }
-            
-            .main-content.sidebar-hidden {
-                margin-left: 0;
-            }
-            
-            .sidebar-toggle.sidebar-visible {
-                left: 300px;
-            }
-        }
-        /* ── 3D Scene Container ─────────────────────────────────────────
-           The scene-container fills the main-content area.
-           position:relative lets us layer the canvas and overlays on top
-           of each other using position:absolute children.
-        ────────────────────────────────────────────────────────────── */
-        .scene-container {
-            position: relative;
-            /* Break out of main-content's 20px padding on all sides */
-            margin: -20px;
-            width: calc(100% + 40px);
-            /* Fill viewport minus the top navbar (~60px) */
-            height: calc(100vh - 60px);
-            overflow: hidden;
-            background: #111827;
-        }
-
-        /* The Three.js canvas — fills the scene container exactly.
-           max-height must be none to override any global canvas rules. */
-        #scene {
-            display: block;
-            width: 100%;
-            height: 100%;
-            max-height: none;
-        }
-
-        /* ── Character picker overlay ─────────────────────────────────────────
-           Sits on top of the canvas, same z-layer as the loading spinner. */
-        #char-picker {
-            position:       absolute;
-            inset:          0;
-            display:        flex;
-            align-items:    center;
-            justify-content: center;
-            background:     rgba(17, 24, 39, 0.88);
-            backdrop-filter: blur(6px);
-            z-index:        20;
-        }
-        #char-picker-inner {
-            text-align:  center;
-            color:       #e5e7eb;
-            max-width:   560px;
-            padding:     24px;
-        }
-        #char-picker-title {
-            font-size:   1.5rem;
-            font-weight: 700;
-            margin:      0 0 6px;
-            color:       #f9fafb;
-        }
-        #char-picker-sub {
-            font-size:   0.85rem;
-            color:       #9ca3af;
-            margin:      0 0 24px;
-        }
-        #char-picker-grid {
-            display:     flex;
-            flex-wrap:   wrap;
-            gap:         16px;
-            justify-content: center;
-        }
-        .char-card {
-            width:           118px;
-            padding:         14px 12px;
-            background:      #1f2937;
-            border:          2px solid #374151;
-            border-radius:   12px;
-            cursor:          pointer;
-            transition:      border-color 0.2s, transform 0.15s, background 0.2s;
-            display:         flex;
-            flex-direction:  column;
-            align-items:     center;
-            gap:             10px;
-            color:           #e5e7eb;
-        }
-        .char-card:hover {
-            border-color:    #3b82f6;
-            background:      #263348;
-            transform:       translateY(-3px);
-        }
-        .char-portrait {
-            width:           84px;
-            height:          84px;
-            border-radius:   999px;
-            object-fit:      cover;
-            object-position: center;
-            display:         block;
-            background:      radial-gradient(circle at 50% 32%, #334155 0%, #0f172a 100%);
-            border:          2px solid #475569;
-            box-shadow:      0 6px 16px rgba(0, 0, 0, 0.28);
-        }
-        .char-name  { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; }
-
-        /* ── Loading overlay ───────────────────────────────────────────
-           Shown while GLB files are being fetched.
-           Hidden (display:none) once SceneManager calls the onReady cb.
-        ────────────────────────────────────────────────────────────── */
-        #scene-loading {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(17, 24, 39, 0.92);
-            color: #e0e0e0;
-            font-size: 15px;
-            z-index: 10;
-            gap: 16px;
-        }
-        .loading-spinner {
-            width: 44px; height: 44px;
-            border: 4px solid rgba(255,255,255,0.15);
-            border-top-color: #3b82f6;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ── HUD overlay — wealth/bracket info in the bottom-right ─────── */
-        #scene-overlay {
-            position: absolute;
-            bottom: 80px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 6px;
-            pointer-events: none;   /* clicks pass through to the canvas */
-            z-index: 5;
-        }
-        #you-bracket-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            background: #334155;
-            color: #e2e8f0;
-            width: fit-content;
-            transition: background 0.6s;
-        }
-        #you-bracket-badge.Lower       { background: #7f1d1d; color: #fca5a5; }
-        #you-bracket-badge.Middle      { background: #1e3a5f; color: #93c5fd; }
-        #you-bracket-badge.Upper       { background: #14532d; color: #86efac; }
-        #you-wealth-display {
-            font-size: 32px;
-            font-weight: 800;
-            color: #f1f5f9;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
-            line-height: 1;
-        }
-        #you-percentile {
-            font-size: 17px;
-            font-weight: 600;
-            color: #e2e8f0;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
-        }
-        /* Third-person: wealth + percent shown above the character by the
-           scene overlay label — hide them from the corner HUD.             */
-        #you-wealth-display,
-        #you-percentile { display: none; }
-        /* First-person: player label is off, so restore them in the corner. */
-        #scene-overlay.fp-hud #you-wealth-display,
-        #scene-overlay.fp-hud #you-percentile { display: block; }
-
-        /* ── Collapsible sidebar sections ─────────────────────────────── */
-        .section-title.collapsible {
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .section-title.collapsible .chevron {
-            font-size: 11px;
-            transition: transform 0.2s;
-            color: #94a3b8;
-            flex-shrink: 0;
-        }
-        .section-title.collapsed .chevron {
-            transform: rotate(-90deg);
-        }
-        .section-body {
-            overflow: hidden;
-            transition: max-height 0.28s ease, opacity 0.2s;
-            max-height: 800px;
-            opacity: 1;
-        }
-        .section-body.collapsed {
-            max-height: 0;
-            opacity: 0;
-        }
-
-        /* ── Live stat cards ─────────────────────────────────────────────── */
-        .sidebar-stats {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .stat-card {
-            background: #1e2d3d;
-            border: 1px solid #3a5068;
-            border-radius: 8px;
-            padding: 12px 8px 10px;
-            text-align: center;
-        }
-        .stat-label {
-            font-size: 10px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            line-height: 1.4;
-        }
-        .stat-label .info-button { flex-shrink: 0; }
-        .stat-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #f1f5f9;
-            line-height: 1;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: -0.01em;
-        }
-
-        /* ── Camera toggle button — bottom-right corner ─────────────── */
-        #cam-toggle-btn {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            z-index: 5;
-        }
-        #cam-toggle-btn button {
-            background: rgba(30, 41, 59, 0.85);
-            border: 1px solid #475569;
-            color: #e2e8f0;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            backdrop-filter: blur(6px);
-            transition: background 0.2s, border-color 0.2s;
-        }
-        #cam-toggle-btn button:hover {
-            background: rgba(51, 65, 85, 0.95);
-            border-color: #64748b;
-        }
-
-        /* ── Scene overlay labels (world-space HTML labels projected from 3D) ── */
-        .scene-label {
-            position: absolute;
-            pointer-events: none;
-            transform: translateX(-50%);
-            white-space: nowrap;
-            font-family: inherit;
-            z-index: 6;
-            line-height: 1.3;
-        }
-        .player-label {
-            text-align: center;
-            transform: translate(-50%, -100%);
-            padding-bottom: 4px;
-        }
-        .label-arrow {
-            font-size: 20px;
-            color: #60a5fa;
-            text-shadow: 0 0 8px rgba(96,165,250,0.9);
-            animation: bounce-arrow 1s ease-in-out infinite;
-        }
-        @keyframes bounce-arrow {
-            0%, 100% { transform: translateY(0); }
-            50%       { transform: translateY(5px); }
-        }
-        .label-wealth {
-            font-size: 14px;
-            font-weight: 700;
-            color: #f1f5f9;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.95);
-            background: rgba(0,0,0,0.6);
-            padding: 2px 8px;
-            border-radius: 4px;
-            display: inline-block;
-        }
-        .label-pct {
-            font-size: 11px;
-            color: #94a3b8;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.95);
-        }
-        .pop-badge {
-            transform: translate(-50%, -100%);
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            color: #f1f5f9;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-        }
-        .richest-badge {
-            background: rgba(133, 100, 4, 0.82);
-            border: 1px solid rgba(234,179,8,0.55);
-        }
-        .poorest-badge {
-            background: rgba(90, 26, 26, 0.82);
-            border: 1px solid rgba(220,38,38,0.5);
-        }
-        .hover-tip {
-            transform: translate(-50%, -100%);
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 7px 14px;
-            font-size: 13px;
-            text-align: center;
-            color: #e2e8f0;
-            backdrop-filter: blur(4px);
-            box-shadow: 0 4px 14px rgba(0,0,0,0.45);
-        }
-        /* First-person mode: reduce wealth display font size */
-        #scene-overlay.fp-hud #you-wealth-display {
-            font-size: 26px;
-        }
+        body { background: #0a0a0f !important; color: #00f5a0 !important; }
     </style>
+    <link rel="stylesheet" href="game.css">
 </head>
 <body>
-    <button class="sidebar-toggle sidebar-visible" id="sidebar-toggle" onclick="toggleSidebar()">
-        ☰
-    </button>
 
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h1>Inequality Simulator</h1>
-            <p>Agent-based model for studying wealth distribution and economic policies</p>
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 1: CHARACTER CREATOR
+     ══════════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-character">
+
+    <header class="game-header">
+        <div class="game-logo">SOCIAL<span>CAPITAL</span></div>
+        <div class="px-xxs text-muted">the game was never fair</div>
+    </header>
+
+    <nav class="pixel-trail">
+        <div class="trail-node active" id="trail-0">
+            <div class="trail-dot"></div>
+            <div class="trail-label">CHARACTER</div>
         </div>
-        
-        <div class="sidebar-content">
+        <div class="trail-node" id="trail-1">
+            <div class="trail-dot"></div>
+            <div class="trail-label">POLICY</div>
+        </div>
+        <div class="trail-node" id="trail-2">
+            <div class="trail-dot"></div>
+            <div class="trail-label">THE RUN</div>
+        </div>
+        <div class="trail-node" id="trail-3">
+            <div class="trail-dot"></div>
+            <div class="trail-label">CRISIS</div>
+        </div>
+        <div class="trail-node" id="trail-4">
+            <div class="trail-dot"></div>
+            <div class="trail-label">VERDICT</div>
+        </div>
+    </nav>
 
-            <!-- Hidden inputs kept for app.js compatibility -->
-            <select id="view-select" style="display:none;"><option value="person" selected>Person</option><option value="population">Population</option></select>
-            <input type="number" id="population-input" value="100" min="50" max="1000" style="display:none;">
-            <input type="checkbox" id="patron-toggle" style="display:none;">
-            <span id="status-text" style="display:none;"></span>
-            <span id="backend-status" style="display:none;"></span>
-            <span id="status-policy" style="display:none;"></span>
-            <span id="status-population" style="display:none;"></span>
+    <main style="flex:1; overflow-y:auto; padding: 24px 20px; max-width: 900px; margin: 0 auto; width: 100%;">
 
-            <!-- Live stat cards (stacked) -->
-            <div class="sidebar-stats">
-                <div class="stat-card">
-                    <div class="stat-label">
-                        Population Wealth
-                        <button class="info-button" onclick="showInfoModal('totalWealth')">?</button>
-                    </div>
-                    <div class="stat-value" id="stat-total-wealth">—</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">
-                        Inequality Metric
-                        <button class="info-button" onclick="showInfoModal('gini')">?</button>
-                    </div>
-                    <div class="stat-value" id="stat-gini">—</div>
+        <div class="px-lg text-neon" style="margin-bottom: 6px;">WHO ARE YOU?</div>
+        <p style="color: var(--muted); font-size: 13px; margin-bottom: 24px; line-height: 1.7;">
+            Build your character. The simulation will assign your starting position based on 
+            statistically realistic weights. You'll run alongside five others — 
+            their outcomes depend on the same rules as yours.
+        </p>
+
+        <!-- Randomize button -->
+        <button class="btn btn-secondary btn-full" id="randomize-btn" style="margin-bottom: 20px;">
+            ⚄ RANDOMIZE MY LIFE
+        </button>
+
+        <!-- Creator grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+
+            <!-- Name -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <label class="field-label" for="char-name-input">YOUR NAME</label>
+                <input 
+                    class="text-input" 
+                    id="char-name-input" 
+                    type="text" 
+                    placeholder="Enter your name..."
+                    maxlength="20"
+                    autocomplete="off"
+                >
+            </div>
+
+            <!-- Job -->
+            <div class="card">
+                <label class="field-label">YOUR JOB</label>
+                <div class="option-group" id="job-options">
+                    <button class="option-btn" data-value="fast_food">
+                        <span class="option-btn-label">Fast food / retail</span>
+                        <span class="option-btn-meta">~$28K/YR</span>
+                    </button>
+                    <button class="option-btn" data-value="trades">
+                        <span class="option-btn-label">Skilled trades / nurse</span>
+                        <span class="option-btn-meta">~$52K/YR</span>
+                    </button>
+                    <button class="option-btn" data-value="small_biz">
+                        <span class="option-btn-label">Small business / teacher</span>
+                        <span class="option-btn-meta">~$72K/YR</span>
+                    </button>
+                    <button class="option-btn" data-value="manager">
+                        <span class="option-btn-label">Manager / engineer</span>
+                        <span class="option-btn-meta">~$140K/YR</span>
+                    </button>
+                    <button class="option-btn" data-value="executive">
+                        <span class="option-btn-label">Executive / investor</span>
+                        <span class="option-btn-meta">TOP 20%</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- Model Configuration (collapsible, open by default) -->
-            <div class="controls-section">
-                <div class="section-title collapsible" onclick="toggleSection('section-config')">
-                    Model Configuration <span class="chevron">&#9660;</span>
+            <!-- Family -->
+            <div class="card">
+                <label class="field-label">FAMILY SITUATION</label>
+                <div class="option-group" id="family-options">
+                    <button class="option-btn" data-value="single">
+                        <span class="option-btn-label">Single, no children</span>
+                        <span class="option-btn-meta">BASELINE</span>
+                    </button>
+                    <button class="option-btn" data-value="single_parent">
+                        <span class="option-btn-label">Single parent</span>
+                        <span class="option-btn-meta">HIGHER COST</span>
+                    </button>
+                    <button class="option-btn" data-value="partnered">
+                        <span class="option-btn-label">Partnered, no children</span>
+                        <span class="option-btn-meta">DUAL INCOME</span>
+                    </button>
+                    <button class="option-btn" data-value="family">
+                        <span class="option-btn-label">Family with children</span>
+                        <span class="option-btn-meta">HIGHER COST</span>
+                    </button>
                 </div>
-                <div class="section-body" id="section-config">
-                    <div class="control-group" style="margin-top:12px;">
-                        <div class="parameter-header">
-                            <label>Policy</label>
-                            <button class="info-button" id="policy-info-btn" onclick="showInfoModal(currentActivePolicy)">?</button>
-                        </div>
-                        <!-- Policy is now set from the Blockly editor; this display
-                             updates automatically via /api/get_active_policy polling. -->
-                        <div id="policy-display" style="
-                            background:#2d3748; border:1px solid #4a5568; border-radius:4px;
-                            padding:6px 10px; color:#e2e8f0; font-size:0.9em;
-                            display:flex; align-items:center; justify-content:space-between;">
-                            <span id="policy-display-label">Econophysics</span>
-                            <a href="/blockly/" target="_blank"
-                               style="font-size:0.8em; color:#9b59b6; text-decoration:none; white-space:nowrap;">
-                               ✏ Edit in Blockly
-                            </a>
-                        </div>
-                        <!-- Hidden input keeps the rest of the JS working unchanged -->
-                        <input type="hidden" id="policy-select" value="econophysics">
+            </div>
+
+            <!-- Education -->
+            <div class="card">
+                <label class="field-label">EDUCATION</label>
+                <div class="option-group" id="edu-options">
+                    <button class="option-btn" data-value="no_college">
+                        <span class="option-btn-label">No college degree</span>
+                        <span class="option-btn-meta">-3% TAILWIND</span>
+                    </button>
+                    <button class="option-btn" data-value="some_college">
+                        <span class="option-btn-label">Some college / trade cert</span>
+                        <span class="option-btn-meta">BASELINE</span>
+                    </button>
+                    <button class="option-btn" data-value="bachelors">
+                        <span class="option-btn-label">Bachelor's degree</span>
+                        <span class="option-btn-meta">+2% TAILWIND</span>
+                    </button>
+                    <button class="option-btn" data-value="graduate">
+                        <span class="option-btn-label">Graduate degree</span>
+                        <span class="option-btn-meta">+4% TAILWIND</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Starting position reveal -->
+            <div class="card neon" id="position-card" style="grid-column: 1 / -1; display: none;">
+                <div class="px-xxs text-neon" style="margin-bottom: 8px;">YOUR STARTING POSITION</div>
+                <div class="px-sm" id="position-name" style="color: var(--amber); margin-bottom: 6px;"></div>
+                <div style="font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 12px;" id="position-bio"></div>
+                <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                    <div style="text-align: center;">
+                        <div class="px-sm" id="position-bracket" style="margin-bottom: 2px;"></div>
+                        <div style="font-size: 10px; color: var(--muted);">STARTING BRACKET</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div class="px-sm" id="position-tailwind" style="margin-bottom: 2px;"></div>
+                        <div style="font-size: 10px; color: var(--muted);">FINANCIAL TAILWIND</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Model Controls (collapsible, open by default) -->
-            <div class="buttons-section">
-                <div class="section-title collapsible" onclick="toggleSection('section-controls')">
-                    Model Controls <span class="chevron">&#9660;</span>
+        </div>
+
+        <!-- Your companions -->
+        <div class="px-xs text-muted" style="margin-bottom: 12px;">YOUR COMPANIONS THIS RUN</div>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 24px;" id="archetype-preview">
+            <!-- Populated by JS -->
+        </div>
+
+        <button class="btn btn-primary btn-full" id="to-policy-btn" disabled>
+            THIS IS ME →
+        </button>
+
+    </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 2: POLICY SETUP
+     ══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-policy">
+
+    <header class="game-header">
+        <div class="game-logo">SOCIAL<span>CAPITAL</span></div>
+        <div class="px-xxs text-muted">the game was never fair</div>
+    </header>
+
+    <nav class="pixel-trail">
+        <div class="trail-node done"   id="trail-p0"><div class="trail-dot"></div><div class="trail-label">CHARACTER</div></div>
+        <div class="trail-node active" id="trail-p1"><div class="trail-dot"></div><div class="trail-label">POLICY</div></div>
+        <div class="trail-node"        id="trail-p2"><div class="trail-dot"></div><div class="trail-label">THE RUN</div></div>
+        <div class="trail-node"        id="trail-p3"><div class="trail-dot"></div><div class="trail-label">CRISIS</div></div>
+        <div class="trail-node"        id="trail-p4"><div class="trail-dot"></div><div class="trail-label">VERDICT</div></div>
+    </nav>
+
+    <main style="flex:1; overflow-y:auto; padding: 24px 20px; max-width: 900px; margin: 0 auto; width: 100%;">
+
+        <div class="px-lg text-neon" style="margin-bottom: 6px;">SET THE RULES</div>
+        <p style="color: var(--muted); font-size: 13px; margin-bottom: 24px; line-height: 1.7;">
+            Choose the economic system your world runs on. 
+            You can change this during the simulation — but only when a crisis forces the question.
+        </p>
+
+        <div class="policy-grid" style="margin-bottom: 24px;">
+
+            <div class="policy-card" data-policy="econophysics">
+                <span class="policy-card-tag">MODE 01</span>
+                <div class="policy-card-name">ECONOPHYSICS</div>
+                <div class="policy-card-tagline">"The Default World"</div>
+                <p class="policy-card-desc">
+                    Everyone earns a percentage of what they already own. 
+                    Money flows freely between agents. No safety net. No rules. 
+                    Watch what happens when the only rule is compounding.
+                </p>
+            </div>
+
+            <div class="policy-card" data-policy="capitalism">
+                <span class="policy-card-tag">MODE 02</span>
+                <div class="policy-card-name">CAPITALISM</div>
+                <div class="policy-card-tagline">"Bet on Innovation"</div>
+                <p class="policy-card-desc">
+                    Agents who accumulate enough capital can innovate — 
+                    temporarily multiplying their earnings. 
+                    The barrier to entry is the whole game.
+                    Can Dev make it before Jordan laps him?
+                </p>
+            </div>
+
+            <div class="policy-card" data-policy="communism">
+                <span class="policy-card-tag">MODE 03</span>
+                <div class="policy-card-name">COMMUNISM</div>
+                <div class="policy-card-tagline">"Share Everything"</div>
+                <p class="policy-card-desc">
+                    All wealth is redistributed equally every round. 
+                    Sounds like it solves the problem. 
+                    Run it for 50 years and see 
+                    whether equality is stable — or just delayed.
+                </p>
+            </div>
+
+            <div class="policy-card" data-policy="fascism">
+                <span class="policy-card-tag">MODE 04</span>
+                <div class="policy-card-name">FASCISM</div>
+                <div class="policy-card-tagline">"Power Protects Power"</div>
+                <p class="policy-card-desc">
+                    A ruling class taxes everyone else and keeps what they take. 
+                    Party elites are chosen before the game begins. 
+                    You might be one. You probably aren't.
+                </p>
+            </div>
+
+            <div class="policy-card" data-policy="custom" style="border-color: var(--neon)22;">
+                <span class="policy-card-tag" style="color: var(--neon);">MODE 05</span>
+                <div class="policy-card-name" style="color: var(--neon);">CUSTOM</div>
+                <div class="policy-card-tagline">"Design Your Own"</div>
+                <p class="policy-card-desc">
+                    Describe your economic policy in plain English. 
+                    AI generates the rules. You run the experiment.
+                    What system would <em>you</em> build?
+                </p>
+            </div>
+
+        </div>
+
+        <!-- Custom policy input (shown when CUSTOM card is selected) -->
+        <div id="custom-policy-input" class="card" style="display: none; margin-bottom: 24px;">
+            <div class="px-xs text-neon" style="margin-bottom: 12px;">DESCRIBE YOUR POLICY</div>
+            <textarea id="policy-prompt" 
+                style="
+                    width: 100%; 
+                    min-height: 100px; 
+                    background: var(--bg2); 
+                    border: 1px solid var(--border); 
+                    border-radius: 8px; 
+                    color: var(--text); 
+                    font-family: inherit; 
+                    font-size: 13px; 
+                    padding: 12px; 
+                    resize: vertical; 
+                    margin-bottom: 12px;
+                    line-height: 1.6;
+                "
+                placeholder="e.g. Tax the top 10% at 30% and redistribute equally to the bottom 50%. Agents below the survival threshold get a basic income boost."
+            ></textarea>
+            <button class="btn btn-primary btn-full" id="generate-policy-btn" style="margin-bottom: 12px;">
+                ✦ GENERATE WITH AI
+            </button>
+            <div id="policy-status" style="font-size: 12px; color: var(--muted); margin-bottom: 8px;"></div>
+            <div id="policy-description" style="
+                display: none;
+                background: var(--bg2); 
+                border: 1px solid var(--neon)33; 
+                border-radius: 8px; 
+                padding: 16px; 
+                font-size: 13px; 
+                line-height: 1.8; 
+                color: var(--text);
+            "></div>
+        </div>
+
+        <!-- Patron toggle -->
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="px-xs text-muted" style="margin-bottom: 12px;">MODIFIER</div>
+            <div class="toggle-row">
+                <div>
+                    <div class="px-xxs" style="margin-bottom: 4px;">PATRON MODE</div>
+                    <div style="font-size: 12px; color: var(--muted); line-height: 1.6;">
+                        The wealthiest 20% voluntarily transfer 10% of their wealth 
+                        each round to a randomly chosen lower agent. 
+                        Philanthropy as a system feature — not a fix.
+                    </div>
                 </div>
-                <div class="section-body" id="section-controls" style="padding-top:10px;">
-                    <button id="initialize-btn" class="btn-primary" onclick="initializeModel()">
-                        Initialize Model
-                    </button>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="patron-toggle">
+                    <div class="toggle-track"></div>
+                </label>
+            </div>
+        </div>
 
-                    <button id="step-btn" class="btn-success" onclick="stepModel()" disabled>
-                        Single Step
-                    </button>
+        <button class="btn btn-primary btn-full" id="to-run-btn">
+            BEGIN THE 50-YEAR RUN →
+        </button>
 
-                    <button id="continuous-run-btn" class="btn-warning" onclick="startContinuousRun()" disabled>
-                        Start Continuous
-                    </button>
+    </main>
+</div>
 
-                    <button id="stop-btn" class="btn-danger" onclick="stopContinuousRun()" disabled style="display:none;">
-                        Stop Continuous
-                    </button>
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 3: THE RUN
+     ══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-run">
 
-                    <a href="/blockly/" target="_blank" style="text-decoration:none;">
-                        <button class="btn-primary" style="background-color:#9b59b6;">
-                            Open Policy Editor
-                        </button>
-                    </a>
+    <header class="game-header">
+        <div class="game-logo">SOCIAL<span>CAPITAL</span></div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="year-display" id="year-display">YEAR 00</div>
+            <div style="text-align: right;">
+                <div class="px-xxs text-muted">GINI</div>
+                <div class="px-sm text-neon" id="header-gini">—</div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="pixel-trail">
+        <div class="trail-node done"  ><div class="trail-dot"></div><div class="trail-label">CHARACTER</div></div>
+        <div class="trail-node done"  ><div class="trail-dot"></div><div class="trail-label">POLICY</div></div>
+        <div class="trail-node active"><div class="trail-dot"></div><div class="trail-label">THE RUN</div></div>
+        <div class="trail-node"      ><div class="trail-dot"></div><div class="trail-label">CRISIS</div></div>
+        <div class="trail-node"      ><div class="trail-dot"></div><div class="trail-label">VERDICT</div></div>
+    </nav>
+
+    <div style="flex:1; display: flex; overflow: hidden;">
+
+        <!-- Sidebar -->
+        <aside style="width: 200px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+            <div class="px-xxs text-muted" style="margin-bottom: 4px;">CITIZENS</div>
+            <div id="char-sidebar">
+                <!-- Populated by JS -->
+            </div>
+            <div class="gini-meter" style="margin-top: auto;">
+                <span class="gini-label">INEQUALITY</span>
+                <span class="gini-value" id="gini-display">—</span>
+                <div class="gini-track">
+                    <div class="gini-fill" id="gini-fill" style="width: 0%;"></div>
                 </div>
+            </div>
+        </aside>
+
+        <!-- Main stage -->
+        <div style="flex:1; display: flex; flex-direction: column; overflow: hidden; padding: 12px; gap: 10px;">
+
+            <!-- Exchange canvas -->
+            <div class="stage-wrap" style="flex: 1; min-height: 300px; width: 100%;">
+                <canvas id="exchange-canvas"></canvas>
+            </div>
+
+            <!-- Dispatch feed -->
+            <div>
+                <div class="px-xxs text-muted" style="margin-bottom: 6px;">DISPATCH</div>
+                <div class="dispatch-feed" id="dispatch-feed">
+                    <div class="dispatch-entry" style="color: var(--muted);">
+                        Waiting for simulation to start...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="sim-controls">
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <button class="btn btn-secondary" id="step-btn">▶ STEP</button>
+                <button class="btn btn-primary"   id="run-btn" >▶▶ RUN</button>
+                <button class="btn btn-danger"    id="stop-btn" style="display:none;">■ STOP</button>
             </div>
 
         </div>
     </div>
+</div>
 
-    <div class="main-content" id="main-content">
-        <div id="error-message" class="error" style="display: none;"></div>
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 4: CRISIS EVENT
+     ══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-crisis">
 
-        <!--
-          PERSON VIEW — 3D Scene
-          ──────────────────────────────────────────────────────────────
-          This div is shown/hidden by setView() in app.js (same id as before
-          so the existing show/hide logic still works without changes).
+    <header class="game-header">
+        <div class="game-logo">SOCIAL<span>CAPITAL</span></div>
+        <div class="px-xxs text-amber">⚠ CRISIS EVENT</div>
+    </header>
 
-          Inside we have:
-            #scene-loading  — spinner, removed once character loads
-            #scene          — the Three.js WebGL canvas
-            #scene-overlay  — HUD: bracket badge, wealth number, percentile
-            #cam-toggle-btn — button to flip between 3rd/1st person
-        -->
-        <div id="person-view" style="display:none;" class="scene-container">
+    <main style="flex:1; overflow-y:auto; max-width: 700px; margin: 0 auto; width: 100%; padding: 20px;">
 
-            <!-- Loading state (hidden by SceneManager once GLBs are ready) -->
-            <div id="scene-loading">
-                <div class="loading-spinner"></div>
-                <p>Loading character...</p>
+        <div class="card red" id="crisis-card" style="overflow: hidden; padding: 0;">
+
+            <div class="crisis-header" id="crisis-header" style="background: var(--red);">
+                <span class="crisis-tag" id="crisis-tag">YEAR 10 · CRISIS EVENT</span>
+                <div class="crisis-title" id="crisis-title">—</div>
             </div>
 
-            <!-- Character picker overlay: shown after GLBs load, before sim starts -->
-            <div id="char-picker" style="display:none;">
-                <div id="char-picker-inner">
-                    <h2 id="char-picker-title">Choose your character</h2>
-                    <p id="char-picker-sub">You can change this at any time</p>
-                    <div id="char-picker-grid"></div>
+            <div class="crisis-body">
+                <div class="crisis-text" id="crisis-text">—</div>
+
+                <div class="crisis-standings">
+                    <span class="standings-label">CURRENT STANDINGS</span>
+                    <div id="crisis-standings-list">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
-            </div>
 
-            <!-- Three.js renders into this canvas -->
-            <canvas id="scene"></canvas>
-
-            <!-- HUD: top-left wealth info -->
-            <div id="scene-overlay">
-                <div id="you-bracket-badge">—</div>
-                <div id="you-wealth-display">—</div>
-                <div id="you-percentile">—</div>
-            </div>
-
-            <!-- Camera mode toggle: bottom-right -->
-            <div id="cam-toggle-btn">
-                <button onclick="window.simulator && simulator.toggleCameraMode()">
-                    <span id="cam-mode-label">&#128694; Third Person</span>
-                </button>
+                <span class="choices-label">YOUR RESPONSE:</span>
+                <div id="crisis-choices">
+                    <!-- Populated by JS -->
+                </div>
             </div>
 
         </div>
 
-    <div id="info-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title" id="modal-title">Information</h2>
-                <button class="close-button" onclick="closeInfoModal()">&times;</button>
-            </div>
-            <div class="modal-body" id="modal-body">
-                </div>
-            <div class="modal-footer" id="modal-footer" style="display: none;">
-                <button class="btn-danger" onclick="closeInfoModal()" style="margin-right: 10px;">Cancel</button>
-                <button id="modal-confirm-btn" class="btn-primary">Initialize</button>
+    </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 5: FINAL VERDICT
+     ══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-verdict">
+
+    <header class="game-header">
+        <div class="game-logo">SOCIAL<span>CAPITAL</span></div>
+        <div class="px-xxs text-muted">game over</div>
+    </header>
+
+    <main style="flex:1; overflow-y:auto; max-width: 700px; margin: 0 auto; width: 100%; padding: 24px 20px;">
+
+        <!-- Score -->
+        <div class="card neon" style="text-align: center; margin-bottom: 16px; padding: 24px;">
+            <div class="px-xs text-muted" style="margin-bottom: 8px;">FINAL INEQUALITY SCORE</div>
+            <span class="verdict-gini" id="verdict-gini">—</span>
+            <div class="px-xs text-muted" style="margin-bottom: 8px;">GINI COEFFICIENT</div>
+            <div class="px-sm" id="verdict-equity" style="margin-bottom: 12px;"></div>
+            <div class="px-xs" id="verdict-country" style="color: var(--amber);"></div>
+        </div>
+
+        <!-- Character journeys -->
+        <div class="card" style="margin-bottom: 16px;">
+            <div class="px-xs text-muted" style="margin-bottom: 12px;">50-YEAR JOURNEYS</div>
+            <div id="verdict-sparklines">
+                <!-- Populated by JS -->
             </div>
         </div>
-    </div>
 
-    <script>
-        // Information content for each element
-        const infoContent = {
-            'econophysics': {
-                title: "Econophysics Policy",
-                content: `<p>This is  the base model. All other policies add features to this simple exchange of wealth.</p>
-                <p>How it works for each step:</p>
-                <ul>
-                <li> Each turn you get a payday, which is a percentage of your wealth. </li>
-                <li> You pay a survival cost to another random agent (e.g., food, water, shelter etc.) </li>
-                <li> If you have money left over you are thriving and pay another random agent for luxury goods. (e.g., trips, phones, etc) </li>
-                </ul>
-                <p>Intuitively one may think that each agent will retain the same amount of wealth, but instead an unequal distribution of wealth occurs. </p>
-                <p>The population generates more wealth, because as agents gain money, their payday increases since it is a percentage of their total. </p>
-                <p>Take a look at the population view and see how each policy impacts total wealth and other population level metrics.</p>
-                <br>
-                <p> Take a look at this mini-animation to see what is happening in the econophysics policy.</p>
-                <p><a href="/explain/econophysics" target="_blank" class="btn-primary" style="display:inline-block; padding:8px 16px; text-decoration:none; border-radius:4px; margin-top:10px;">View Animation</a></p>`
-            },
-            'fascism': {
-                title: "Fascism",
-                content: `<p>In this variation, a group of agents are picked as party elites. They then tax all the other agents.
-                    This can be thought of as a fascist system, where those in power stay in power.</p>
-                <p>How it works for each step:</p>
-                <ul>
-                <li> Each turn you get a payday, which is a percentage of your wealth. </li>
-                <li> You pay a tax to an agent, identified as an elite </li>
-                <li> You pay a survival cost to another random agent (e.g., food, water, shelter etc.) </li>
-                <li> If you have money left over you are thriving and pay another random agent for luxury goods. (e.g., trips, phones, etc) </li>
-                </ul>
-                <p> Notice at the population level, this inhibits total wealth growth. More agents have less money, so their payday is smaller and 
-                    overall the total wealth of the population is less.</p> 
-                <br>
-                <p> Take a look at this mini-animation to see what is happening in the fascism policy.</p>
-                <p><a href="/explain/fascism" target="_blank" class="btn-primary" style="display:inline-block; padding:8px 16px; text-decoration:none; border-radius:4px; margin-top:10px;">View Animation</a></p>`
-            },
-            'communism': {
-                title: "Communism",
-                content: 
-                `<p>In this variation, after each step all wealth is redistributed. This represents a communist ideal, 
-                    where wealth can be perfectly distributed. (or can it?)</p>
-                <p>How it works for each step:</p>
-                <ul>
-                <li> Each turn you get a payday, which is a percentage of your wealth. </li>
-                <li> That wealth is then redistributed so every has an equali share. </li>
-                <li> You pay a survival cost to another random agent (e.g., food, water, shelter etc.) </li>
-                <li> If you have money left over you are thriving and pay another random agent for luxury goods. (e.g., trips, phones, etc) </li>
-                <br>
-                <p> Take a look at this mini-animation to see what is happening in the communism policy.</p>
-                <p><a href="/explain/communism" target="_blank" class="btn-primary" style="display:inline-block; padding:8px 16px; text-decoration:none; border-radius:4px; margin-top:10px;">View Animation</a></p>`
+        <!-- Decision log -->
+        <div class="decision-log" style="margin-bottom: 16px;">
+            <span class="decision-log-title">YOUR POLICY DECISIONS</span>
+            <div id="verdict-decisions">
+                <!-- Populated by JS -->
+            </div>
+        </div>
 
-            },
-            'capitalism': {
-                title: "Capitalism",
-                content: `<p>In the capitalism variation, each agent has an innovation attribute. If an agent has enough wealth for an initial 
-                    start up (amount needed to fund a start up is based on total population wealth), then they can then invest in a "new idea" and get a pay increase.
-                    This pay increase, then degrades over time as the innovation becomes less relevant.</p>
-                <p>How it works for each step:</p>
-                <ul>
-                <li> Each turn you get a payday, which is a percentage of your wealth. </li>
-                <li> If you have enough money, you can innovate (get paid more for a new good or service)
-                <li> You pay a survival cost to another random agent (e.g., food, water, shelter etc.) </li>
-                <li> If you have money left over you are thriving and pay another random agent for luxury goods. (e.g., trips, phones, etc) </li>
-                </ul>
-                <p> Notice on the population level, capitalism generates the most total wealth because people's innovations are generating larger paydays.</p>
-                <br>
-                <p><a href="/explain/capitalism" target="_blank" class="btn-primary" style="display:inline-block; padding:8px 16px; text-decoration:none; border-radius:4px; margin-top:10px;">View Animation</a></p>`
-            },
-            'patron': {
-                title: "Patron Effect",
-                content: `<p>When enabled, the wealthiest 20% of agents (patrons) will support other agents.</p>
-                <p>In each step, the patron pulls form a random sample of the population and then transfer 10%
-                    of their wealth to a randomly selected agent.</p>`
-            },
-            'comparison': {
-                title: "Comparison Mode",
-                content: `<p>Runs all four policies simultaneously to compare their effects on wealth distribution and inequality over time.</p>`
-            },
-            population: {
-                title: "Population Size",
-                content: `
-                    <p>The total number of agents (individuals) in the economic simulation. Each agent represents an economic actor with wealth that can change over time through various interactions.</p>
-                `
-            },
-            totalWealth: {
-                title: "Total Wealth Over Time",
-                content: `
-                    <p>This chart tracks the aggregate wealth of all agents in the system over time, showing how different economic policies affect overall wealth creation or destruction.</p>
-                    
-                    <p><strong>Key Insights:</strong></p>
-                    <p>• <strong>Upward trends:</strong> Policies generate new wealth over time </p>
-                    <p>• <strong>Flat trends:</strong>  Policies keep amount of wealth stagnant</p>
-                    <p>• <strong>Downward trends:</strong> Policies reduce the amount of overall wealth</p>
-                    
-                    <p>In comparison mode, this chart shows how different policies perform in terms of overall economic growth, helping identify which approaches are most effective at increasing societal wealth.</p>
-                    
-                `
-            },
-            gini: {
-                title: "Gini Coefficient Over Time",
-                content: `
-                    <p>The Gini coefficient is a measure of income or wealth inequality within a population, ranging from 0 (perfect equality- every person has the exact same amount of wealth) to 1 (maximum inequality- one person has all the wealth).</p>
-                    
-                    <p>This metric helps evaluate the trade-offs between economic growth and equality under different policy regimes.</p>
-                `
-            },
-            wealthDistribution: {
-                title: "Wealth Distribution",
-                content: `
-                    <p>This histogram shows how wealth is distributed across all agents at the current point in time, revealing the shape of inequality in the simulated economy.</p>
-                `
-            },
-            mobility: {
-                title: "Economic Mobility - Class Transition Flows",
-                content: `
-                    <p>This chart visualizes economic mobility by showing the flow of people between economic classes over time. It displays class transitions as curved arrows connecting "Previous" and "Current" class positions.</p>
-                    
-                    <p><strong>Chart Elements:</strong></p>
-                    <p>• <strong>Class Boxes:</strong> Three economic classes (Lower, Middle, Upper) shown for both previous and current time periods</p>
-                    <p>• <strong>Flow Arrows:</strong> Curved lines showing movement between classes, with thickness indicating the number of people transitioning</p>
-                    <p>• <strong>Arrow Colors:</strong> Green for upward mobility, Red for downward mobility, Blue for staying in the same class</p>
-                    <p>• <strong>Numbers:</strong> Count of people making each transition</p>
-                    
-                    <p><strong>Flow Interpretation:</strong></p>
-                    <p>• <strong>Thick arrows:</strong> Large numbers of people moving between classes</p>
-                    <p>• <strong>Thin arrows:</strong> Few people making transitions</p>
-                    <p>• <strong>Self-loops (blue):</strong> People remaining in their current class</p>
-                    <p>• <strong>Upward flows (green):</strong> Economic advancement from lower to higher classes</p>
-                    <p>• <strong>Downward flows (red):</strong> Economic decline from higher to lower classes</p>
-                    
-                    <p><strong>Policy Analysis:</strong></p>
-                    <p>• Strong upward flows indicate policies that promote social mobility</p>
-                    <p>• Large self-loops suggest economic stability within classes</p>
-                    <p>• Significant downward flows may indicate economic instability or policy failures</p>
-                    
-                    <p>This visualization helps assess how economic policies affect class mobility and social advancement opportunities.</p>
-                `
-            }
-        };
+        <!-- Actions -->
+        <div class="btn-row">
+            <button class="btn btn-secondary" id="share-btn">⬆ SHARE SCORE</button>
+            <button class="btn btn-primary"   id="play-again-btn">↺ PLAY AGAIN</button>
+        </div>
 
-        let confirmationCallback = null;
+    </main>
+</div>
 
-        // Modal functions
-        function showInfoModal(type, onConfirm = null) {
-            const modal = document.getElementById('info-modal');
-            const title = document.getElementById('modal-title');
-            const body = document.getElementById('modal-body');
-            const footer = document.getElementById('modal-footer');
-            const confirmBtn = document.getElementById('modal-confirm-btn');
-
-            // Look up known content; for custom/AI-generated policies fall back
-            // to a generic description so the modal always opens.
-            const info = infoContent[type] || {
-                title: getPolicyDisplayLabel(type),
-                content: `<p>This is a custom policy created in the Blockly editor.</p>
-                          <p>Open the <a href="/blockly/" target="_blank">Policy Editor</a> to view or modify it.</p>`
-            };
-
-            title.textContent = info.title;
-            body.innerHTML    = info.content;
-            modal.style.display = 'block';
-
-            if (onConfirm) {
-                footer.style.display = 'block';
-                confirmationCallback = onConfirm;
-                confirmBtn.onclick = () => {
-                    if (confirmationCallback) confirmationCallback();
-                    closeInfoModal();
-                };
-            } else {
-                footer.style.display = 'none';
-            }
-        }
-
-        function closeInfoModal() {
-            document.getElementById('info-modal').style.display = 'none';
-            document.getElementById('modal-footer').style.display = 'none';
-            confirmationCallback = null;
-        }
-
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            const modal = document.getElementById('info-modal');
-            if (event.target === modal) {
-                closeInfoModal();
-            }
-        }
-
-        // Accordion section toggle
-        function toggleSection(id) {
-            const body  = document.getElementById(id);
-            const title = body?.previousElementSibling;
-            if (!body) return;
-            const isCollapsed = body.classList.toggle('collapsed');
-            if (title) title.classList.toggle('collapsed', isCollapsed);
-        }
-
-        // Sidebar toggle functionality
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('main-content');
-            const toggleBtn = document.getElementById('sidebar-toggle');
-            
-            sidebar.classList.toggle('hidden');
-            mainContent.classList.toggle('sidebar-hidden');
-            toggleBtn.classList.toggle('sidebar-visible');
-            
-            // Change button text
-            if (sidebar.classList.contains('hidden')) {
-                toggleBtn.textContent = '☰';
-            } else {
-                toggleBtn.textContent = '✕';
-            }
-        }
-
-        // ── Active-policy label ───────────────────────────────────────────────
-        // The Blockly editor POSTs the active policy to /api/set_active_policy
-        // whenever the user saves. We poll here so that if the editor is open in
-        // another tab the sidebar updates without a page refresh.
-        var currentActivePolicy = 'econophysics';
-
-        var POLICY_LABELS = {
-            'econophysics': 'Econophysics',
-            'fascism':       'Fascism',
-            'capitalism':    'Capitalism',
-            'communism':     'Communism',
-            'comparison':    'Comparison'
-        };
-
-        function getPolicyDisplayLabel(key) {
-            return POLICY_LABELS[key] ||
-                   key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        }
-
-        function syncActivePolicy() {
-            fetch('/api/get_active_policy')
-                .then(r => r.json())
-                .then(d => {
-                    var key = d.policy || 'econophysics';
-                    if (key === currentActivePolicy) return; // no change
-                    currentActivePolicy = key;
-                    // Update the hidden input (initializeModel() reads it)
-                    var hidden = document.getElementById('policy-select');
-                    if (hidden) hidden.value = key;
-                    // Update the visible label
-                    var lbl = document.getElementById('policy-display-label');
-                    if (lbl) lbl.textContent = getPolicyDisplayLabel(key);
-                })
-                .catch(() => {}); // silent fail if server is unreachable
-        }
-
-        // Initial fetch + poll every 5 s
-        syncActivePolicy();
-        setInterval(syncActivePolicy, 5000);
-    </script>
-
-
-    <!--
-      scene.js must load AFTER Three.js (which defines window.THREE)
-      and BEFORE app.js (which creates a SceneManager instance).
-    -->
-    <script src="scene.js"></script>
-    <script src="app.js"></script>
+<script src="game.js"></script>
 </body>
 </html>
