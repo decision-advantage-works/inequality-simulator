@@ -642,18 +642,38 @@ function initPolicyScreen() {
     setupPolicyCards();
     setupPatronToggle();
     setupPolicyCTA();
+    setupCustomPolicyGenerator();
 }
 
 /* ----------------------------------------------------------
    POLICY CARD SELECTION
    ---------------------------------------------------------- */
 function setupPolicyCards() {
+    const customInput = el('custom-policy-input');
+
     document.querySelectorAll('.policy-card').forEach(card => {
         card.addEventListener('click', () => {
             document.querySelectorAll('.policy-card')
                 .forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
             STATE.policy = card.dataset.policy;
+
+            // Show/hide custom policy input
+            if (customInput) {
+                customInput.style.display = STATE.policy === 'custom' ? 'block' : 'none';
+            }
+
+            // Reset run button state when switching policies
+            const runBtn = el('to-run-btn');
+            if (runBtn) {
+                if (STATE.policy === 'custom' && !STATE.customPolicyReady) {
+                    runBtn.disabled = true;
+                    runBtn.style.opacity = '0.4';
+                } else {
+                    runBtn.disabled = false;
+                    runBtn.style.opacity = '1';
+                }
+            }
         });
     });
 
@@ -663,6 +683,98 @@ function setupPolicyCards() {
         defaultCard.classList.add('selected');
         STATE.policy = 'econophysics';
     }
+}
+
+/* ----------------------------------------------------------
+   CUSTOM POLICY GENERATOR
+   ---------------------------------------------------------- */
+function setupCustomPolicyGenerator() {
+    const btn = el('generate-policy-btn');
+    if (!btn) return;
+
+    // Track whether a custom policy has been successfully generated
+    STATE.customPolicyReady = false;
+
+    btn.addEventListener('click', async () => {
+        const promptText = (el('policy-prompt')?.value || '').trim();
+        if (!promptText) {
+            setCustomStatus('⚠ Please describe your policy first.', 'var(--neon)');
+            return;
+        }
+
+        // Disable button during generation
+        btn.disabled = true;
+        btn.textContent = '⏳ GENERATING...';
+        setCustomStatus('Phase 1: Sending to AI...', 'var(--muted)');
+        hideCustomDescription();
+
+        try {
+            // 1. Generate + validate via /api/chat
+            const chatRes = await apiPost('/chat', { message: promptText });
+
+            if (chatRes.error) {
+                throw new Error(chatRes.error);
+            }
+
+            const data = typeof chatRes.response === 'string'
+                ? JSON.parse(chatRes.response)
+                : chatRes.response;
+
+            if (!data || !data.python_code) {
+                throw new Error('No policy code was generated.');
+            }
+
+            setCustomStatus('Phase 2: Saving policy...', 'var(--muted)');
+
+            // 2. Save the generated class to custom_policies.py
+            await apiPost('/add_custom_policy', { code: data.python_code });
+
+            // 3. Wire the step function into user_logic.py
+            if (data.step_code) {
+                await apiPost('/update_code', { code: data.step_code });
+            }
+
+            // 4. Show the plain-English description
+            if (data.description) {
+                showCustomDescription(data.description);
+            }
+
+            // 5. Mark as ready — enable the run button
+            STATE.customPolicyReady = true;
+            const runBtn = el('to-run-btn');
+            if (runBtn) {
+                runBtn.disabled = false;
+                runBtn.style.opacity = '1';
+            }
+
+            setCustomStatus(data.status_message || '✅ Policy generated and ready!', '#00ff88');
+            btn.textContent = '✦ REGENERATE';
+
+        } catch (err) {
+            setCustomStatus('❌ ' + (err.message || 'Generation failed.'), '#ff4466');
+            btn.textContent = '✦ TRY AGAIN';
+        } finally {
+            btn.disabled = false;
+        }
+    });
+}
+
+function setCustomStatus(msg, color) {
+    const s = el('policy-status');
+    if (s) { s.textContent = msg; s.style.color = color || 'var(--muted)'; }
+}
+
+function showCustomDescription(desc) {
+    const d = el('policy-description');
+    if (!d) return;
+    d.style.display = 'block';
+    d.innerHTML = '<div style="font-size:11px; text-transform:uppercase; color:var(--neon); margin-bottom:8px; letter-spacing:1px;">How Your Policy Works</div>'
+        + desc.replace(/\n/g, '<br>');
+}
+
+function hideCustomDescription() {
+    const d = el('policy-description');
+    if (d) d.style.display = 'none';
 }
 
 /* ----------------------------------------------------------
@@ -681,6 +793,16 @@ function setupPatronToggle() {
    ---------------------------------------------------------- */
 function setupPolicyCTA() {
     el('to-run-btn').addEventListener('click', () => {
+        // Block if custom policy selected but not yet generated
+        if (STATE.policy === 'custom' && !STATE.customPolicyReady) return;
+
+        // For custom policies, use 'econophysics' as the base model policy
+        // (the custom logic runs via user_logic.py override)
+        if (STATE.policy === 'custom') {
+            STATE._originalPolicy = 'custom';
+            STATE.policy = 'econophysics';
+        }
+
         showScreen('loading');
         beginInitSequence();
     });

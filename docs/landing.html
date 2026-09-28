@@ -253,6 +253,53 @@
                 </p>
             </div>
 
+            <div class="policy-card" data-policy="custom" style="border-color: var(--neon)22;">
+                <span class="policy-card-tag" style="color: var(--neon);">MODE 05</span>
+                <div class="policy-card-name" style="color: var(--neon);">CUSTOM</div>
+                <div class="policy-card-tagline">"Design Your Own"</div>
+                <p class="policy-card-desc">
+                    Describe your economic policy in plain English. 
+                    AI generates the rules. You run the experiment.
+                    What system would <em>you</em> build?
+                </p>
+            </div>
+
+        </div>
+
+        <!-- Custom policy input (shown when CUSTOM card is selected) -->
+        <div id="custom-policy-input" class="card" style="display: none; margin-bottom: 24px;">
+            <div class="px-xs text-neon" style="margin-bottom: 12px;">DESCRIBE YOUR POLICY</div>
+            <textarea id="policy-prompt" 
+                style="
+                    width: 100%; 
+                    min-height: 100px; 
+                    background: var(--bg2); 
+                    border: 1px solid var(--border); 
+                    border-radius: 8px; 
+                    color: var(--text); 
+                    font-family: inherit; 
+                    font-size: 13px; 
+                    padding: 12px; 
+                    resize: vertical; 
+                    margin-bottom: 12px;
+                    line-height: 1.6;
+                "
+                placeholder="e.g. Tax the top 10% at 30% and redistribute equally to the bottom 50%. Agents below the survival threshold get a basic income boost."
+            ></textarea>
+            <button class="btn btn-primary btn-full" id="generate-policy-btn" style="margin-bottom: 12px;">
+                ✦ GENERATE WITH AI
+            </button>
+            <div id="policy-status" style="font-size: 12px; color: var(--muted); margin-bottom: 8px;"></div>
+            <div id="policy-description" style="
+                display: none;
+                background: var(--bg2); 
+                border: 1px solid var(--neon)33; 
+                border-radius: 8px; 
+                padding: 16px; 
+                font-size: 13px; 
+                line-height: 1.8; 
+                color: var(--text);
+            "></div>
         </div>
 
         <!-- Patron toggle -->
