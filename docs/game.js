@@ -2,7 +2,7 @@
    SOCIAL CAPITAL
    game.js — Part 1: State, Constants & Utilities
    ========================================================== */
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = '/api';
 
 /* ----------------------------------------------------------
    ARCHETYPES
