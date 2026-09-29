@@ -103,7 +103,7 @@ def setup_simulation():
 
 # --- Standard Routes ---
 @app.route('/')
-def landing(): return send_from_directory('docs', 'index.html')
+def landing(): return send_from_directory('docs', 'landing.html')
 
 @app.route('/simulator')
 def simulator(): return send_from_directory('docs', 'landing.html')

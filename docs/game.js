@@ -54,38 +54,38 @@ const ARCHETYPES = [
    CHARACTER CREATOR MAPPINGS
    ---------------------------------------------------------- */
 const JOB_W = {
-    fast_food:  { w: 0.08, label: 'Fast food / retail'       },
-    trades:     { w: 0.14, label: 'Skilled trades / nurse'   },
-    small_biz:  { w: 0.20, label: 'Small business / teacher' },
-    manager:    { w: 0.26, label: 'Manager / engineer'       },
-    executive:  { w: 0.34, label: 'Executive / investor'     }
+    fast_food: { w: 0.08, label: 'Fast food / retail' },
+    trades: { w: 0.14, label: 'Skilled trades / nurse' },
+    small_biz: { w: 0.20, label: 'Small business / teacher' },
+    manager: { w: 0.26, label: 'Manager / engineer' },
+    executive: { w: 0.34, label: 'Executive / investor' }
 };
 
 const FAMILY_MOD = {
-    single:        { mod:  0.00 },
+    single: { mod: 0.00 },
     single_parent: { mod: -0.03 },
-    partnered:     { mod:  0.02 },
-    family:        { mod: -0.01 }
+    partnered: { mod: 0.02 },
+    family: { mod: -0.01 }
 };
 
 const EDU_MOD = {
-    no_college:   { mod: -0.03 },
-    some_college: { mod:  0.00 },
-    bachelors:    { mod:  0.02 },
-    graduate:     { mod:  0.04 }
+    no_college: { mod: -0.03 },
+    some_college: { mod: 0.00 },
+    bachelors: { mod: 0.02 },
+    graduate: { mod: 0.04 }
 };
 
 /* ----------------------------------------------------------
    COUNTRY GINI REFERENCE
    ---------------------------------------------------------- */
 const COUNTRY_GINI = [
-    { name: 'Norway',       flag: 'NO', gini: 0.25 },
-    { name: 'Sweden',       flag: 'SE', gini: 0.27 },
-    { name: 'Germany',      flag: 'DE', gini: 0.31 },
-    { name: 'UK',           flag: 'GB', gini: 0.35 },
-    { name: 'USA',          flag: 'US', gini: 0.39 },
-    { name: 'Mexico',       flag: 'MX', gini: 0.45 },
-    { name: 'Brazil',       flag: 'BR', gini: 0.53 },
+    { name: 'Norway', flag: 'NO', gini: 0.25 },
+    { name: 'Sweden', flag: 'SE', gini: 0.27 },
+    { name: 'Germany', flag: 'DE', gini: 0.31 },
+    { name: 'UK', flag: 'GB', gini: 0.35 },
+    { name: 'USA', flag: 'US', gini: 0.39 },
+    { name: 'Mexico', flag: 'MX', gini: 0.45 },
+    { name: 'Brazil', flag: 'BR', gini: 0.53 },
     { name: 'South Africa', flag: 'ZA', gini: 0.63 }
 ];
 
@@ -371,12 +371,12 @@ function getTailwind(w) {
 
 function getTailwindColor(t) {
     if (t === 'Headwind') return 'var(--red)';
-    if (t === 'Neutral')  return 'var(--amber)';
+    if (t === 'Neutral') return 'var(--amber)';
     return 'var(--neon)';
 }
 
 function getBracketColor(b) {
-    if (b === 'Lower')  return 'var(--lower)';
+    if (b === 'Lower') return 'var(--lower)';
     if (b === 'Middle') return 'var(--middle)';
     return 'var(--upper)';
 }
@@ -518,28 +518,28 @@ function setupOptionGroups() {
    CALCULATE PLAYER W FROM SELECTIONS
    ---------------------------------------------------------- */
 function updatePlayerW() {
-    const jobBtn    = document.querySelector('#job-options .option-btn.selected');
+    const jobBtn = document.querySelector('#job-options .option-btn.selected');
     const familyBtn = document.querySelector('#family-options .option-btn.selected');
-    const eduBtn    = document.querySelector('#edu-options .option-btn.selected');
+    const eduBtn = document.querySelector('#edu-options .option-btn.selected');
 
     if (!jobBtn || !familyBtn || !eduBtn) {
         updateCTAState();
         return;
     }
 
-    const jobData    = JOB_W[jobBtn.dataset.value];
+    const jobData = JOB_W[jobBtn.dataset.value];
     const familyData = FAMILY_MOD[familyBtn.dataset.value];
-    const eduData    = EDU_MOD[eduBtn.dataset.value];
+    const eduData = EDU_MOD[eduBtn.dataset.value];
 
     const w = Math.max(0.04, Math.min(0.40,
         jobData.w + familyData.mod + eduData.mod
     ));
 
-    STATE.player.w               = w;
-    STATE.player.tailwind        = getTailwind(w);
-    STATE.player.job             = jobBtn.dataset.value;
-    STATE.player.family          = familyBtn.dataset.value;
-    STATE.player.education       = eduBtn.dataset.value;
+    STATE.player.w = w;
+    STATE.player.tailwind = getTailwind(w);
+    STATE.player.job = jobBtn.dataset.value;
+    STATE.player.family = familyBtn.dataset.value;
+    STATE.player.education = eduBtn.dataset.value;
     STATE.player.targetPercentile = getPlayerTargetPercentile(w);
 
     updatePositionCard();
@@ -550,32 +550,32 @@ function updatePlayerW() {
    POSITION CARD — shows after all selections made
    ---------------------------------------------------------- */
 function updatePositionCard() {
-    const jobBtn    = document.querySelector('#job-options .option-btn.selected');
+    const jobBtn = document.querySelector('#job-options .option-btn.selected');
     const familyBtn = document.querySelector('#family-options .option-btn.selected');
-    const eduBtn    = document.querySelector('#edu-options .option-btn.selected');
+    const eduBtn = document.querySelector('#edu-options .option-btn.selected');
 
     if (!jobBtn || !familyBtn || !eduBtn) return;
 
-    const card     = el('position-card');
-    const name     = el('char-name-input').value.trim() || 'YOUR CHARACTER';
+    const card = el('position-card');
+    const name = el('char-name-input').value.trim() || 'YOUR CHARACTER';
     const tailwind = STATE.player.tailwind;
 
     const bios = {
         Headwind: 'Your money doesn\'t work for you. You depend entirely on income. One bad year can undo years of progress.',
-        Neutral:  'You have some cushion — but nothing that compounds significantly. You\'ll need good policy and a little luck.',
+        Neutral: 'You have some cushion — but nothing that compounds significantly. You\'ll need good policy and a little luck.',
         Tailwind: 'Your wealth generates more wealth. The system already works for you. The question is what happens to everyone else.'
     };
 
     const bracketLabels = {
         Headwind: 'LOWER',
-        Neutral:  'MIDDLE',
+        Neutral: 'MIDDLE',
         Tailwind: 'UPPER'
     };
 
-    el('position-name').textContent     = name.toUpperCase();
-    el('position-bio').textContent      = bios[tailwind];
-    el('position-bracket').textContent  = bracketLabels[tailwind];
-    el('position-bracket').style.color  = getTailwindColor(tailwind);
+    el('position-name').textContent = name.toUpperCase();
+    el('position-bio').textContent = bios[tailwind];
+    el('position-bracket').textContent = bracketLabels[tailwind];
+    el('position-bracket').style.color = getTailwindColor(tailwind);
     el('position-tailwind').textContent = tailwind.toUpperCase();
     el('position-tailwind').style.color = getTailwindColor(tailwind);
 
@@ -586,12 +586,12 @@ function updatePositionCard() {
    CTA STATE — enable button only when form is complete
    ---------------------------------------------------------- */
 function updateCTAState() {
-    const btn       = el('to-policy-btn');
-    const hasName   = el('char-name-input').value.trim().length > 0;
-    const hasJob    = !!document.querySelector('#job-options .option-btn.selected');
+    const btn = el('to-policy-btn');
+    const hasName = el('char-name-input').value.trim().length > 0;
+    const hasJob = !!document.querySelector('#job-options .option-btn.selected');
     const hasFamily = !!document.querySelector('#family-options .option-btn.selected');
-    const hasEdu    = !!document.querySelector('#edu-options .option-btn.selected');
-    btn.disabled    = !(hasName && hasJob && hasFamily && hasEdu);
+    const hasEdu = !!document.querySelector('#edu-options .option-btn.selected');
+    btn.disabled = !(hasName && hasJob && hasFamily && hasEdu);
 }
 
 /* ----------------------------------------------------------
@@ -604,9 +604,9 @@ function setupRandomize() {
             'Riley', 'Drew', 'Jamie', 'Taylor', 'Robin'
         ];
         el('char-name-input').value = randomFrom(names);
-        randomSelectGroup('job-options',    Object.keys(JOB_W));
+        randomSelectGroup('job-options', Object.keys(JOB_W));
         randomSelectGroup('family-options', Object.keys(FAMILY_MOD));
-        randomSelectGroup('edu-options',    Object.keys(EDU_MOD));
+        randomSelectGroup('edu-options', Object.keys(EDU_MOD));
         updatePlayerW();
     });
 }
@@ -1021,10 +1021,10 @@ async function matchCharactersToAgents() {
     // (extremes first, then work toward middle)
     const matchOrder = [
         { id: 'jordan', percentile: 0.95 },
-        { id: 'maria',  percentile: 0.05 },
-        { id: 'amir',   percentile: 0.75 },
-        { id: 'ruth',   percentile: 0.25 },
-        { id: 'dev',    percentile: 0.50 }
+        { id: 'maria', percentile: 0.05 },
+        { id: 'amir', percentile: 0.75 },
+        { id: 'ruth', percentile: 0.25 },
+        { id: 'dev', percentile: 0.50 }
     ];
 
     for (const { id, percentile } of matchOrder) {
@@ -1093,12 +1093,12 @@ async function refreshSimData() {
             const agent = mobilityData[char.agentIndex];
             if (!agent) return;
             const prevWealth = char.wealth;
-            char.wealth   = agent.wealth;
-            char.bracket  = agent.bracket;
+            char.wealth = agent.wealth;
+            char.bracket = agent.bracket;
             char.mobility = agent.mobility;
-            char.trend    = char.wealth > prevWealth ? 'up'
-                          : char.wealth < prevWealth ? 'down'
-                          : 'flat';
+            char.trend = char.wealth > prevWealth ? 'up'
+                : char.wealth < prevWealth ? 'down'
+                    : 'flat';
             char.wealthHistory.push(agent.wealth);
         });
 
@@ -1137,8 +1137,8 @@ function renderSidebar() {
         <div class="char-card ${char.isPlayer ? 'you' : ''}"
              id="char-card-${char.id}">
             ${char.isPlayer
-                ? '<span class="char-you-tag">▶ YOU</span>'
-                : ''}
+            ? '<span class="char-you-tag">▶ YOU</span>'
+            : ''}
             <div class="char-name-row">
                 <span class="char-name" style="color: ${char.color}">
                     ${char.name}
@@ -1162,8 +1162,8 @@ function renderSidebar() {
             </div>
             <div class="char-tailwind" id="tailwind-${char.id}">
                 ${char.isPlayer
-                    ? STATE.player.tailwind
-                    : char.tailwind || ''}
+            ? STATE.player.tailwind
+            : char.tailwind || ''}
             </div>
         </div>
     `).join('');
@@ -1177,10 +1177,10 @@ function updateSidebar() {
     const maxWealth = Math.max(...STATE.characters.map(c => c.wealth));
 
     STATE.characters.forEach(char => {
-        const bar     = el(`wealth-bar-${char.id}`);
-        const val     = el(`wealth-val-${char.id}`);
-        const trend   = el(`trend-${char.id}`);
-        const card    = el(`char-card-${char.id}`);
+        const bar = el(`wealth-bar-${char.id}`);
+        const val = el(`wealth-val-${char.id}`);
+        const trend = el(`trend-${char.id}`);
+        const card = el(`char-card-${char.id}`);
         const bracket = card ? card.querySelector('.char-bracket-tag') : null;
 
         if (bar) {
@@ -1220,23 +1220,23 @@ function updateGiniDisplay() {
     const current = STATE.giniHistory[STATE.giniHistory.length - 1];
     if (current === undefined) return;
 
-    const giniEl  = el('gini-display');
-    const fillEl  = el('gini-fill');
+    const giniEl = el('gini-display');
+    const fillEl = el('gini-fill');
     const headerEl = el('header-gini');
 
     const val = current.toFixed(3);
 
-    if (giniEl)   giniEl.textContent = val;
+    if (giniEl) giniEl.textContent = val;
     if (headerEl) headerEl.textContent = val;
 
     // Color shifts from neon → amber → red as inequality rises
     const color = current < 0.35 ? 'var(--neon)'
-                : current < 0.50 ? 'var(--amber)'
-                : 'var(--red)';
+        : current < 0.50 ? 'var(--amber)'
+            : 'var(--red)';
 
-    if (giniEl)  giniEl.style.color  = color;
+    if (giniEl) giniEl.style.color = color;
     if (fillEl) {
-        fillEl.style.width      = (current * 100) + '%';
+        fillEl.style.width = (current * 100) + '%';
         fillEl.style.background = color;
     }
 }
@@ -1274,12 +1274,12 @@ async function updateDispatchFeed() {
 
     // Separate exchanges into categories
     const characterExchanges = [];  // between 2 of our characters
-    const incomingExchanges  = [];  // outside agent → our character
-    const outgoingExchanges  = [];  // our character → outside agent
+    const incomingExchanges = [];  // outside agent → our character
+    const outgoingExchanges = [];  // our character → outside agent
 
     data.edges.forEach(([fromId, toId, amount]) => {
         const fromChar = idToChar[fromId];
-        const toChar   = idToChar[toId];
+        const toChar = idToChar[toId];
 
         if (fromChar && toChar) {
             characterExchanges.push({ fromChar, toChar, amount });
@@ -1294,9 +1294,9 @@ async function updateDispatchFeed() {
     characterExchanges.slice(0, 2).forEach(({ fromChar, toChar, amount }) => {
         addDispatchEntry(
             `<span class="actor" style="color:${fromChar.color}">${fromChar.name}</span> ` +
-             `paid ` +
+            `paid ` +
             `<span class="actor" style="color:${toChar.color}">${toChar.name}</span> ` +
-             `<span class="good">$${amount.toFixed(2)}</span>`
+            `<span class="good">$${amount.toFixed(2)}</span>`
         );
     });
 
@@ -1335,12 +1335,12 @@ async function updateDispatchFeed() {
         if (curr < prev * 0.8) {
             addDispatchEntry(
                 `<span class="actor" style="color:${char.color}">${char.name}</span>` +
-                 `<span class="bad">'s wealth dropped by more than 20%</span>`
+                `<span class="bad">'s wealth dropped by more than 20%</span>`
             );
         } else if (curr > prev * 1.5) {
             addDispatchEntry(
                 `<span class="actor" style="color:${char.color}">${char.name}</span>` +
-                 `<span class="good">'s wealth increased by more than 50%!</span>`
+                `<span class="good">'s wealth increased by more than 50%!</span>`
             );
         }
     });
@@ -1365,7 +1365,7 @@ function resizeCanvas() {
     const wrap = canvas.parentElement;
     const w = wrap.offsetWidth || wrap.getBoundingClientRect().width || 600;
     const h = Math.max(300, wrap.offsetHeight || 300);
-    canvas.width  = w;
+    canvas.width = w;
     canvas.height = h;
 }
 
@@ -1385,20 +1385,20 @@ function getNodePositions() {
     }
 
     // Calculate positions once
-    const w  = canvas.width;
-    const h  = canvas.height;
+    const w = canvas.width;
+    const h = canvas.height;
     const cx = w / 2;
     const cy = h / 2;
-    const r  = Math.min(w, h) * 0.35;
-    const n  = STATE.characters.length;
+    const r = Math.min(w, h) * 0.35;
+    const n = STATE.characters.length;
 
     fixedNodePositions = STATE.characters.map((char, i) => {
-    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
-    return {
-        char,
-        x: cx + Math.cos(angle) * r,
-        y: cy + Math.sin(angle) * r
-    };
+        const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+        return {
+            char,
+            x: cx + Math.cos(angle) * r,
+            y: cy + Math.sin(angle) * r
+        };
     });
 
     return fixedNodePositions;
@@ -1428,13 +1428,13 @@ function animateCanvas() {
     // Draw particles
     canvasParticles = canvasParticles.filter(p => p.life > 0);
     canvasParticles.forEach(p => {
-        p.x   += p.vx;
-        p.y   += p.vy;
+        p.x += p.vx;
+        p.y += p.vy;
         p.life -= 1;
 
         const alpha = p.life / p.maxLife;
         ctx.globalAlpha = alpha;
-        ctx.fillStyle   = p.color;
+        ctx.fillStyle = p.color;
         ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
         ctx.globalAlpha = 1;
     });
@@ -1448,7 +1448,7 @@ function animateCanvas() {
         // Glow for player
         if (char.isPlayer) {
             ctx.shadowColor = char.color;
-            ctx.shadowBlur  = 16;
+            ctx.shadowBlur = 16;
         }
 
         // Node square (pixel art feel)
@@ -1456,45 +1456,45 @@ function animateCanvas() {
         ctx.fillRect(x - size, y - size, size * 2, size * 2);
 
         ctx.strokeStyle = char.color;
-        ctx.lineWidth   = 2;
+        ctx.lineWidth = 2;
         ctx.strokeRect(x - size, y - size, size * 2, size * 2);
 
         ctx.shadowBlur = 0;
 
         // Name label
-        ctx.fillStyle  = char.color;
-        ctx.font       = '5px "Press Start 2P"';
-        ctx.textAlign  = 'center';
+        ctx.fillStyle = char.color;
+        ctx.font = '5px "Press Start 2P"';
+        ctx.textAlign = 'center';
         ctx.fillText(char.name, x, y + size + 14);
 
         // Wealth label
-        ctx.fillStyle  = 'rgba(232, 232, 240, 0.7)';
-        ctx.font       = '5px "Press Start 2P"';
+        ctx.fillStyle = 'rgba(232, 232, 240, 0.7)';
+        ctx.font = '5px "Press Start 2P"';
         ctx.fillText(formatWealth(char.wealth), x, y + size + 24);
     });
 }
 
 function spawnParticles(fromChar, toChar, amount) {
     const nodes = getNodePositions();
-    const from  = nodes.find(n => n.char.id === fromChar.id);
-    const to    = nodes.find(n => n.char.id === toChar.id);
+    const from = nodes.find(n => n.char.id === fromChar.id);
+    const to = nodes.find(n => n.char.id === toChar.id);
     if (!from || !to) return;
 
     const count = Math.min(8, Math.ceil(amount * 2));
 
     for (let i = 0; i < count; i++) {
-        const dx   = to.x - from.x;
-        const dy   = to.y - from.y;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const speed = 2 + Math.random() * 2;
 
         canvasParticles.push({
-            x:       from.x + (Math.random() - 0.5) * 10,
-            y:       from.y + (Math.random() - 0.5) * 10,
-            vx:      (dx / dist) * speed,
-            vy:      (dy / dist) * speed,
-            color:   toChar.color,
-            life:    Math.round(dist / speed),
+            x: from.x + (Math.random() - 0.5) * 10,
+            y: from.y + (Math.random() - 0.5) * 10,
+            vx: (dx / dist) * speed,
+            vy: (dy / dist) * speed,
+            color: toChar.color,
+            life: Math.round(dist / speed),
             maxLife: Math.round(dist / speed)
         });
     }
@@ -1510,7 +1510,7 @@ async function spawnExchangeParticles() {
 
     data.edges.forEach(([fromId, toId, amount]) => {
         const fromChar = idToChar[fromId];
-        const toChar   = idToChar[toId];
+        const toChar = idToChar[toId];
 
         if (fromChar && toChar) {
             // Character to character — normal particle
@@ -1527,12 +1527,12 @@ async function spawnExchangeParticles() {
 
 function spawnParticlesFromEdge(char, amount, direction) {
     const nodes = getNodePositions();
-    const node  = nodes.find(n => n.char.id === char.id);
+    const node = nodes.find(n => n.char.id === char.id);
     if (!node || !canvas) return;
 
     const count = Math.min(4, Math.ceil(amount));
-    const cx    = canvas.width / 2;
-    const cy    = canvas.height / 2;
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
 
     for (let i = 0; i < count; i++) {
         // Random edge position
@@ -1542,23 +1542,23 @@ function spawnParticlesFromEdge(char, amount, direction) {
 
         const fromX = direction === 'in' ? edgeX : node.x;
         const fromY = direction === 'in' ? edgeY : node.y;
-        const toX   = direction === 'in' ? node.x : edgeX;
-        const toY   = direction === 'in' ? node.y : edgeY;
+        const toX = direction === 'in' ? node.x : edgeX;
+        const toY = direction === 'in' ? node.y : edgeY;
 
-        const dx    = toX - fromX;
-        const dy    = toY - fromY;
-        const dist  = Math.sqrt(dx * dx + dy * dy);
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
         const speed = 2 + Math.random() * 2;
 
         canvasParticles.push({
-            x:       fromX,
-            y:       fromY,
-            vx:      (dx / dist) * speed,
-            vy:      (dy / dist) * speed,
-            color:   direction === 'in'
-                     ? char.color
-                     : 'rgba(106, 106, 138, 0.6)',
-            life:    Math.round(dist / speed),
+            x: fromX,
+            y: fromY,
+            vx: (dx / dist) * speed,
+            vy: (dy / dist) * speed,
+            color: direction === 'in'
+                ? char.color
+                : 'rgba(106, 106, 138, 0.6)',
+            life: Math.round(dist / speed),
             maxLife: Math.round(dist / speed)
         });
     }
@@ -1602,7 +1602,7 @@ async function runOneStep() {
 function startContinuous() {
     if (STATE.running) return;
     STATE.running = true;
-    el('run-btn').style.display  = 'none';
+    el('run-btn').style.display = 'none';
     el('stop-btn').style.display = 'inline-block';
 
     STATE.intervalId = setInterval(async () => {
@@ -1613,7 +1613,7 @@ function startContinuous() {
 function stopContinuous() {
     STATE.running = false;
     clearInterval(STATE.intervalId);
-    el('run-btn').style.display  = 'inline-block';
+    el('run-btn').style.display = 'inline-block';
     el('stop-btn').style.display = 'none';
 }
 
@@ -1624,10 +1624,10 @@ function checkForCrisis() {
     // Year 20 — random from pool
     if (STATE.year === 20 && !STATE.crisisPool10Used) {
         stopContinuous();
-        const pool   = CRISES[10];
+        const pool = CRISES[10];
         const crisis = randomFrom(pool);
         STATE.crisisPool10Used = crisis.id;
-        STATE.nextCrisisId     = crisis.effect?.nextCrisis || null;
+        STATE.nextCrisisId = crisis.effect?.nextCrisis || null;
         showCrisisScreen(crisis, 20);
         return;
     }
@@ -1674,7 +1674,7 @@ function initRunScreen() {
    ========================================================== */
 function showCrisisScreen(crisis, year) {
     // Update header tag
-    el('crisis-tag').textContent   = `YEAR ${year} · CRISIS EVENT`;
+    el('crisis-tag').textContent = `YEAR ${year} · CRISIS EVENT`;
     el('crisis-title').textContent = crisis.title;
 
     // Update header color
@@ -1706,14 +1706,14 @@ function renderCrisisStandings() {
     const sorted = [...STATE.characters].sort((a, b) => b.wealth - a.wealth);
 
     container.innerHTML = sorted.map(char => {
-        const pct       = (char.wealth / maxWealth) * 100;
-        const isPlayer  = char.isPlayer;
-        const trendIcon = char.trend === 'up'   ? '↑'
-                        : char.trend === 'down' ? '↓'
-                        : '→';
-        const trendColor = char.trend === 'up'   ? 'var(--neon)'
-                         : char.trend === 'down' ? 'var(--red)'
-                         : 'var(--muted)';
+        const pct = (char.wealth / maxWealth) * 100;
+        const isPlayer = char.isPlayer;
+        const trendIcon = char.trend === 'up' ? '↑'
+            : char.trend === 'down' ? '↓'
+                : '→';
+        const trendColor = char.trend === 'up' ? 'var(--neon)'
+            : char.trend === 'down' ? 'var(--red)'
+                : 'var(--muted)';
 
         return `
             <div class="standing-row ${isPlayer ? 'you-row' : ''}">
@@ -1802,8 +1802,8 @@ async function applyCrisisEffect(effect, year) {
         const msg = mod < 0
             ? `<span class="good">Policy applied — cost of living decreasing</span>`
             : mod > 0
-            ? `<span class="bad">Policy applied — cost of living increasing</span>`
-            : `<span>Policy applied — no immediate economic change</span>`;
+                ? `<span class="bad">Policy applied — cost of living increasing</span>`
+                : `<span>Policy applied — no immediate economic change</span>`;
 
         addDispatchEntry(msg);
     }
@@ -1854,16 +1854,16 @@ function showVerdictScreen() {
    ---------------------------------------------------------- */
 function renderVerdictScore() {
     const finalGini = STATE.giniHistory[STATE.giniHistory.length - 1] || 0;
-    const country   = getCountryByGini(finalGini);
-    const equity    = Math.round((1 - finalGini) * 100);
+    const country = getCountryByGini(finalGini);
+    const equity = Math.round((1 - finalGini) * 100);
 
     // Gini value
     const giniEl = el('verdict-gini');
     if (giniEl) {
         giniEl.textContent = finalGini.toFixed(3);
         giniEl.style.color = finalGini < 0.35 ? 'var(--neon)'
-                           : finalGini < 0.50 ? 'var(--amber)'
-                           : 'var(--red)';
+            : finalGini < 0.50 ? 'var(--amber)'
+                : 'var(--red)';
     }
 
     // Equity score
@@ -1871,8 +1871,8 @@ function renderVerdictScore() {
     if (equityEl) {
         equityEl.textContent = `EQUITY SCORE: ${equity} / 100`;
         equityEl.style.color = equity > 65 ? 'var(--neon)'
-                             : equity > 50 ? 'var(--amber)'
-                             : 'var(--red)';
+            : equity > 50 ? 'var(--amber)'
+                : 'var(--red)';
     }
 
     // Country comparison
@@ -1896,8 +1896,8 @@ function renderVerdictSparklines() {
 
     container.innerHTML = sorted.map(char => {
         const sparkSVG = buildSparkline(char.wealthHistory, char.color);
-        const finalW   = formatWealth(char.wealth);
-        const bracket  = char.bracket;
+        const finalW = formatWealth(char.wealth);
+        const bracket = char.bracket;
 
         return `
             <div class="sparkline-row">
@@ -1924,12 +1924,12 @@ function buildSparkline(history, color) {
         return '<svg width="100%" height="32"></svg>';
     }
 
-    const w      = 200;
-    const h      = 32;
-    const min    = Math.min(...history);
-    const max    = Math.max(...history);
-    const range  = max - min || 1;
-    const n      = history.length;
+    const w = 200;
+    const h = 32;
+    const min = Math.min(...history);
+    const max = Math.max(...history);
+    const range = max - min || 1;
+    const n = history.length;
 
     const points = history.map((val, i) => {
         const x = (i / (n - 1)) * w;
@@ -1991,14 +1991,14 @@ function setupVerdictButtons() {
     if (shareBtn) {
         shareBtn.addEventListener('click', () => {
             const finalGini = STATE.giniHistory[STATE.giniHistory.length - 1] || 0;
-            const equity    = Math.round((1 - finalGini) * 100);
-            const country   = getCountryByGini(finalGini);
-            const player    = STATE.player.name || 'A player';
-            const text      = `I just played SOCIAL CAPITAL.\n` +
-                              `Final Gini: ${finalGini.toFixed(3)}\n` +
-                              `Equity Score: ${equity}/100\n` +
-                              `My economy finished like ${country.name}.\n` +
-                              `"the game was never fair"`;
+            const equity = Math.round((1 - finalGini) * 100);
+            const country = getCountryByGini(finalGini);
+            const player = STATE.player.name || 'A player';
+            const text = `I just played SOCIAL CAPITAL.\n` +
+                `Final Gini: ${finalGini.toFixed(3)}\n` +
+                `Equity Score: ${equity}/100\n` +
+                `My economy finished like ${country.name}.\n` +
+                `"the game was never fair"`;
 
             if (navigator.share) {
                 navigator.share({ title: 'SOCIAL CAPITAL', text })
@@ -2036,25 +2036,25 @@ function fallbackShare(text) {
    ---------------------------------------------------------- */
 function resetGame() {
     // Clear state
-    STATE.screen           = 'character';
-    STATE.player           = {
+    STATE.screen = 'character';
+    STATE.player = {
         name: '', job: null, family: null,
         education: null, w: 0, tailwind: '',
         bracket: '', targetPercentile: 0.5,
         agentIndex: null
     };
-    STATE.policy           = 'econophysics';
-    STATE.patron           = false;
-    STATE.year             = 0;
-    STATE.running          = false;
-    STATE.characters       = [];
-    STATE.giniHistory      = [];
-    STATE.decisions        = [];
-    STATE.nextCrisisId     = null;
+    STATE.policy = 'econophysics';
+    STATE.patron = false;
+    STATE.year = 0;
+    STATE.running = false;
+    STATE.characters = [];
+    STATE.giniHistory = [];
+    STATE.decisions = [];
+    STATE.nextCrisisId = null;
     STATE.crisisPool10Used = null;
 
     clearInterval(STATE.intervalId);
-    canvasParticles        = [];
+    canvasParticles = [];
     fixedNodePositions = null;
 
     // Reset policy screen
