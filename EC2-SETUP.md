@@ -18,18 +18,26 @@ sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 ## 2. Clone repo and set env vars
 
+The instance needs read access to the private repo. Create a read-only deploy key on the instance (`ssh-keygen -t ed25519`) and add the public key under the repo's Settings > Deploy keys.
+
 ```bash
 cd ~
-git clone https://github.com/YOUR_ORG/inequality-simulator.git
+git clone git@github.com:decision-advantage-works/inequality-simulator.git
 cd inequality-simulator
 echo "GOOGLE_API_KEY=your-key-here" > .env
 ```
 
 ## 3. First run
 
+Deploys check out a release tag, not a branch. For the first run, check out the latest release:
+
 ```bash
+git fetch --tags origin
+git checkout "$(git tag --sort=-v:refname | head -1)"
 docker compose up -d --build
 ```
+
+Before the first release exists, there are no tags, so use `git checkout origin/prod` instead.
 
 ## 4. Nginx reverse proxy (optional)
 
@@ -60,4 +68,12 @@ Add these to the repo's Settings > Secrets > Actions:
 |--------|-------|
 | `EC2_HOST` | EC2 public IP or hostname |
 | `EC2_USER` | `ec2-user` (Amazon Linux) |
-| `EC2_SSH_KEY` | Contents of your SSH private key |
+| `EC2_SSH_KEY` | Contents of your SSH private key (use a dedicated deploy key, not your personal key) |
+
+## 6. Deploying a release
+
+The workflow in `.github/workflows/deploy.yml` runs when a GitHub release is published. It checks out that release's tag on the instance and rebuilds the container.
+
+Flow: `deploy/docker-aws` → PR → `main` → `prod` → cut a release from `prod` with a version tag (e.g. `v1.0.0`). Publishing the release deploys it.
+
+To roll back, publish a new release pointing at an earlier commit, or on the instance run `git checkout <old-tag> && docker compose up -d --build`.
