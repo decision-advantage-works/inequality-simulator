@@ -1,120 +1,116 @@
-# Inequality Simulator - Custom Frontend
+# Inequality Simulator
 
-This project has been converted from a Solara-based frontend to a custom HTML/JavaScript frontend with a Flask backend API.
+An agent-based economic simulation of how policy shapes wealth inequality. It is based on the Bouchard-Mézard econophysics model. Users pick a character, choose an economic policy, and watch wealth distribute across the population, with the Gini coefficient and mobility tracked over time. Users can also write custom policies by describing them to an AI assistant or by building them in Blockly.
 
 ## Architecture
 
-- **Backend**: Flask REST API (`app.py`) that serves the model data
-- **Frontend**: Vanilla HTML/CSS/JavaScript (no React) in the `static/` folder
-- **Model**: Original Mesa-based inequality simulation model
+- **Backend**: Flask REST API in `app.py`. It also serves the frontend pages.
+- **Simulation**: Mesa agent-based model in `model.py`, `agent.py`, and `policyblocks.py`.
+- **Frontend** (`docs/`): vanilla HTML, CSS, and JavaScript.
+  - `index.html`: landing page, which links to `/simulator`.
+  - `landing.html` and `game.js` (with `game.css`): the simulator UI.
+- **Custom policy builder** (`blockly/`): Blockly editor at `/blockly/`.
+- **Policy animations** (`explanatory/`): served at `/explain/<name>`.
+- **AI assistant**: Google Gemini, used by `/api/chat` to generate custom policies. Optional.
 
-## Setup and Installation
+## Setup
 
-1. Install the required Python packages:
+Requires Python 3.13.
+
 ```bash
 pip install -r requirements.txt
-```
-
-2. Run the application:
-```bash
 python run.py
 ```
 
-This will:
-- Start the Flask backend on http://localhost:5000
-- Automatically open your browser to the frontend interface
-- Provide API endpoints for the frontend to consume
+`run.py` starts the server on http://localhost:5001 and opens your browser. Put `GOOGLE_API_KEY=...` in a `.env` file in the project root to enable the AI assistant. Without it, everything else still works.
 
-## Usage
+### Docker
 
-### Web Interface
+```bash
+docker compose up --build
+```
 
-The web interface provides:
-- **Policy Selection**: Choose from different economic policies
-- **Population Settings**: Adjust the number of agents
-- **Startup Requirements**: Set different capital requirements for innovation
-- **Real-time Visualization**: Charts showing:
-  - Wealth distribution histogram
-  - Economic mobility scatter plot
-  - Gini coefficient over time
-  - Total wealth over time
+This serves the app on http://localhost:5001. `docker-compose.yml` reads `GOOGLE_API_KEY` from `.env`. See `EC2-SETUP.md` for deploying to AWS.
 
-### Controls
+## Using the Simulator
 
-- **Initialize Model**: Create a new model with selected parameters
-- **Step**: Run one simulation step
-- **Run 50 Steps**: Execute 50 simulation steps at once
-- **Refresh Charts**: Update all visualizations with current data
+1. **Landing page** (`/`): click through to the simulator.
+2. **Character**: pick a character from the in-scene picker.
+3. **Policy**: choose one of the built-in policies, or write a custom one.
+4. **Run**: use **STEP** to advance one step, **RUN** to run continuously, and **STOP** to pause.
+5. **Results**: the exchange canvas, wealth and Gini data, and mobility data update as the model runs.
 
-### Policies Available
+### Built-in policies
 
-1. **Econophysics**: Basic wealth exchange model
-2. **Powerful Leaders**: Party elites collect taxes from subordinates
-3. **Equal Wealth Distribution**: Wealth is redistributed equally each step
-4. **Innovation**: Agents can invest in innovation to increase income
-5. **Comparison**: Run all policies simultaneously and compare results
+- **Econophysics**: the baseline wealth-exchange model.
+- **Capitalism**
+- **Communism**
+- **Fascism**
+- **Custom**: a policy you write through the AI assistant or in Blockly.
 
 ## API Endpoints
 
-The Flask backend provides the following REST API endpoints:
+All endpoints are under `/api`. The model is held in memory, so the server runs as a single process.
 
-- `GET /` - Serve the main HTML interface
-- `POST /api/initialize` - Initialize a new model
-- `POST /api/step` - Run one simulation step
-- `POST /api/run` - Run multiple simulation steps
-- `GET /api/data/wealth-distribution` - Get wealth distribution data
-- `GET /api/data/mobility` - Get mobility data for visualization
-- `GET /api/data/gini` - Get Gini coefficient data over time
-- `GET /api/data/total-wealth` - Get total wealth data over time
-- `GET /api/status` - Get current model status
+**Simulation**
 
-## File Structure
+- `POST /api/initialize`: create a model. Body (all optional): `policy`, `population`, `start_up_required`, `patron`.
+- `POST /api/step`: run one simulation step.
+- `GET /api/status`: current model status.
+- `POST /api/system_reset`: reset the model.
+- `GET /api/get_active_policy` and `POST /api/set_active_policy`: read or set the active policy.
+
+**Data**
+
+- `GET /api/data/wealth-distribution`: wealth distribution.
+- `GET /api/data/mobility`: mobility data.
+- `GET /api/data/gini`: Gini coefficient over time.
+- `GET /api/data/total-wealth`: total wealth over time.
+- `GET /api/data/exchanges`: exchange data.
+
+**Custom policies**
+
+- `POST /api/chat`: generate a custom policy from a natural-language description. Requires `GOOGLE_API_KEY`.
+- `POST /api/add_custom_policy`, `POST /api/update_code`, `POST /api/save_block_definition`: save custom policy code and block definitions.
+- `POST /api/reset_code`: reset custom policy code.
+
+**Pages**
+
+- `GET /` and `GET /simulator`: the simulator.
+- `GET /blockly/`: the Blockly policy builder.
+- `GET /explain/<name>`: policy animations (`econophysics`, `fascism`, `capitalism`, `communism`).
+
+## Project Layout
 
 ```
-py_cafe/
-├── app.py                  # Flask REST API server
-├── run.py                  # Main application runner
-├── model.py                # Original Mesa model (Solara components removed)
-├── utilities.py            # Helper functions
-├── requirements.txt        # Python dependencies
-├── docs/
-│   ├── index.html         # Landing page
-│   ├── landing.html       # Main web interface
-│   └── app.js             # Frontend JavaScript logic
-└── __pycache__/           # Python cache files
+app.py              Flask server: API routes and page routes
+run.py              Local runner (port 5001, opens browser)
+model.py            WealthModel (Mesa)
+agent.py            Agent behaviour
+policyblocks.py     Built-in policy implementations
+utilities.py        Helper functions
+mcp_server.py       Separate Flask app for policy generation (not part of the web app)
+user_logic.py,
+custom_policies.py  Generated at runtime when users save custom policies
+docs/               Frontend: index.html, landing.html, game.js, game.css
+blockly/            Blockly policy builder
+explanatory/        Policy animations and their assets
+Dockerfile,
+docker-compose.yml  Container setup
+EC2-SETUP.md        AWS deployment guide
 ```
-
-## Key Changes from Solara Version
-
-1. **Removed Solara Dependencies**: No longer requires Solara or Jupyter
-2. **Added Flask Backend**: REST API for model operations
-3. **Custom Frontend**: Pure HTML/CSS/JavaScript interface
-4. **Chart.js Visualizations**: Interactive charts without Matplotlib backend
-5. **Asynchronous Updates**: Non-blocking chart updates and model execution
-
-## Features
-
-- **No React Dependency**: Uses vanilla JavaScript for all frontend logic
-- **Responsive Design**: Works on desktop and mobile devices
-- **Real-time Updates**: Charts update dynamically as the model runs
-- **Error Handling**: Graceful error messages and recovery
-- **Comparison Mode**: Run multiple policies simultaneously
-- **Thread-safe**: Backend handles concurrent requests safely
 
 ## Troubleshooting
 
-- **Port 5000 in use**: Change the port in `app.py` and `run.py`
-- **Charts not updating**: Check browser console for JavaScript errors
-- **Model not initializing**: Ensure all dependencies are installed correctly
-- **CORS errors**: The Flask-CORS extension should handle cross-origin requests
+- **Port 5001 already in use**: change the port in `run.py` and `app.py`, and update `docker-compose.yml` if you use Docker.
+- **AI assistant doesn't respond**: check that `GOOGLE_API_KEY` is set in `.env` and that the server was restarted after you added it.
+- **Model doesn't initialize**: check that the dependencies are installed, and check the server log for errors.
+- **Animations return 404 in Docker**: make sure the image was built from the current `Dockerfile`, which copies `explanatory/`.
 
 ## Development
 
-To modify the frontend:
-- Edit `docs/index.html` for landing page changes
-- Edit `docs/landing.html` for main interface layout changes
-- Edit `docs/app.js` for functionality changes
-- Edit `app.py` for API modifications
-
-
-The system is designed to be easily extensible with additional visualization types and model parameters.
+- Landing page: `docs/index.html`
+- Simulator layout: `docs/landing.html` and `docs/game.css`
+- Simulator behaviour: `docs/game.js`
+- API changes: `app.py`
+- Model changes: `model.py`, `agent.py`, `policyblocks.py`
