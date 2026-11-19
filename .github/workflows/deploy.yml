@@ -1,0 +1,25 @@
+name: Deploy to EC2
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: TAG_NAME
+          script: |
+            set -e
+            cd ~/inequality-simulator
+            git fetch --tags origin
+            git checkout "$TAG_NAME"
+            docker compose up -d --build
