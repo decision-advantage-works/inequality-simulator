@@ -1,13 +1,51 @@
-flask
-flask-cors
-mesa[rec]
-scipy
-numpy
-gunicorn
-# chromadb
-# llama-index
-# llama-index-llms-ollama
-# llama-index-embeddings-ollama
-# llama-index-vector-stores-chroma
-google-genai
-python-dotenv
+# Pinned on Python 3.13.11 (matches Dockerfile python:3.13-slim).
+# Direct dependencies: mesa, flask, flask-cors, scipy, numpy, gunicorn, google-genai, python-dotenv.
+# To update: in a clean venv, install the direct dependencies, then pip freeze > requirements.txt.
+annotated-types==0.8.0
+anyio==4.16.0
+beniget==0.5.1
+blinker==1.9.0
+certifi==2026.10.23
+cffi==2.1.1
+charset-normalizer==3.5.2
+click==8.5.1
+cryptography==50.0.2
+distro==1.9.0
+Flask==3.1.3
+flask-cors==6.0.5
+gast==0.7.0
+google-auth==2.62.2
+google-genai==3.6.1
+gunicorn==27.0.1
+h11==0.16.0
+httpcore2==2.16.2
+httpx2==2.16.2
+idna==3.20
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.4
+Mesa==3.5.2
+numpy==2.5.5
+pandas==3.1.1
+ply==3.11
+pyasn1==0.6.5
+pyasn1_modules==0.4.2
+pycparser==3.12
+pydantic==2.14.4
+pydantic_core==2.50.5
+python-dateutil==4.0.0
+python-dotenv==1.2.4
+pythran==0.19.0
+requests==2.34.2
+scipy==1.18.1
+setuptools==84.2.1
+sniffio==1.3.1
+tenacity==9.1.4
+tqdm==4.70.1
+truststore==0.10.5
+typing-inspection==0.4.5
+typing_extensions==4.16.0
+tzdata==2026.6
+urllib3==2.8.0
+websockets==17.4
+Werkzeug==3.1.9
