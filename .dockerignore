@@ -5,6 +5,5 @@ __pycache__
 .venv
 venv
 MoggerHanger/
-explanatory/
 *.egg-info
 .DS_Store
